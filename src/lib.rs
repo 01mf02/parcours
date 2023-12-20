@@ -408,6 +408,10 @@ pub fn from_fn<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>>(f: F) -> FromFn<
 
 /// Lazily construct a parser from a function.
 ///
+/// # Use cases
+///
+/// ## Construct recursive parsers
+///
 /// This allows you to create recursive parsers, like so:
 ///
 /// ~~~
@@ -434,6 +438,65 @@ pub fn from_fn<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>>(f: F) -> FromFn<
 /// fn rec<I: Clone, S, T: Clone>(x: T) -> impl Parser<I, S, O = ()> {
 ///     let x1 = x.clone();
 ///     lazy!(|| rec(x1)).or(lazy!(|| rec(x)))
+/// }
+/// ~~~
+///
+/// ## Reduce build times by type erasure
+///
+/// Like in `chumsky`, we can sometimes get very large parser types, even without recursion.
+/// Such large parser types can significantly increase build times.
+/// Consider the following example:
+///
+/// ~~~
+/// # use parcours::{Parser, lazy};
+/// fn exp_type<I: Clone, S, P: Parser<I, S> + Clone>(p0: P) -> impl Parser<I, S, O = P::O> {
+///     let p1 = p0.clone().or(p0);
+///     let p2 = p1.clone().or(p1);
+///     let p3 = p2.clone().or(p2);
+///     let p4 = p3.clone().or(p3);
+///     let p5 = p4.clone().or(p4);
+///     let p6 = p5.clone().or(p5);
+///     let p7 = p6.clone().or(p6);
+///     let p8 = p7.clone().or(p7);
+///     let p8 = lazy!(|| p8);  // <---- erase type, comment out to see effect
+///     let p9 = p8.clone().or(p8);
+///     let p10 = p9.clone().or(p9);
+///     let p11 = p10.clone().or(p10);
+///     let p12 = p11.clone().or(p11);
+///     let p13 = p12.clone().or(p12);
+///     let p14 = p13.clone().or(p13);
+///     let p15 = p14.clone().or(p14);
+///     let p16 = p15.clone().or(p15);
+///     p16
+/// }
+/// ~~~
+///
+/// Here, we construct a number of parsers, where
+/// the type of each parser contains *twice* the type of the previous parser.
+/// Therefore, the type of the last parser has a size that is
+/// *exponential* in the number of parsers.
+///
+/// Or let's rather say that the type of the last parser *would* have exponential size
+/// *if* we wouldn't use [`lazy!`] to treat `p8`.
+/// (Feel free to comment out this line if you want your CPU to get some exercise.)
+/// Indeed, this line erases the type of `p8`, so the size of the total parser remains tractable.
+///
+/// While this is an artificial example,
+/// such large types may well occur in your parsers ---
+/// they have certainly occured in mine!
+/// In such cases, putting a little [`lazy!`] at strategic places
+/// should reduce your build time.
+/// It may also decrease your runtime --- if you frequently construct the parser.
+///
+/// ## Make [`Parser`] clonable
+///
+/// There are some parsers, such as [`str::take_while0`], that do not implement [`Clone`].
+/// In such a case, we can make it clonable by wrapping it in a little [`lazy!`] call:
+///
+/// ~~~
+/// # use parcours::{Parser, lazy, str::take_while0};
+/// fn everything<'a>() -> impl Parser<&'a str, O = &'a str> + Clone {
+///     lazy!(|| take_while0(|_| true))
 /// }
 /// ~~~
 ///
@@ -522,52 +585,6 @@ pub fn from_fn<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>>(f: F) -> FromFn<
 /// But this means that we again hit the nasty "recursive opaque type" error.
 /// So the [`from_fn`] trick that [`lazy!`] so successfully exploits
 /// cannot be used for [`Iterator`]. There, we are stuck with `Box` for good.
-///
-/// # Other uses for [`lazy!`]
-///
-/// Like in `chumsky`, we can sometimes get very large parser types, even without recursiveness.
-/// Consider the following example:
-///
-/// ~~~
-/// # use parcours::{Parser, lazy};
-/// fn exp_type<I: Clone, S, P: Parser<I, S> + Clone>(p0: P) -> impl Parser<I, S, O = P::O> {
-///     let p1 = p0.clone().or(p0);
-///     let p2 = p1.clone().or(p1);
-///     let p3 = p2.clone().or(p2);
-///     let p4 = p3.clone().or(p3);
-///     let p5 = p4.clone().or(p4);
-///     let p6 = p5.clone().or(p5);
-///     let p7 = p6.clone().or(p6);
-///     let p8 = p7.clone().or(p7);
-///     let p8 = lazy!(|| p8);  // <---- collapse type, comment out to see effect
-///     let p9 = p8.clone().or(p8);
-///     let p10 = p9.clone().or(p9);
-///     let p11 = p10.clone().or(p10);
-///     let p12 = p11.clone().or(p11);
-///     let p13 = p12.clone().or(p12);
-///     let p14 = p13.clone().or(p13);
-///     let p15 = p14.clone().or(p14);
-///     let p16 = p15.clone().or(p15);
-///     p16
-/// }
-/// ~~~
-///
-/// Here, we construct a number of parsers, where
-/// the type of each parser contains *twice* the type of the previous parser.
-/// Therefore, the type of the last parser has a size that is
-/// *exponential* in the number of parsers.
-///
-/// Or let's rather say that the type of the last parser *would* have exponential size
-/// *if* we wouldn't use [`lazy!`] to treat `p8`.
-/// (Feel free to comment out this line if you want your CPU to get some exercise.)
-/// Indeed, this line erases the type of `p8`, so the size of the total parser remains tractable.
-///
-/// While this is an artificial example,
-/// such large types may well occur in your parsers ---
-/// they have certainly occured in mine!
-/// In such cases, putting a little [`lazy!`] at strategic places
-/// should reduce your build time.
-/// It may also decrease your runtime --- if you frequently construct the parser.
 ///
 /// # Limitations
 ///
