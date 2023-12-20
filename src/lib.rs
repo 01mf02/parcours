@@ -551,7 +551,7 @@ pub fn from_fn<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>>(f: F) -> FromFn<
 ///     p16
 /// }
 /// ~~~
-/// 
+///
 /// Here, we construct a number of parsers, where
 /// the type of each parser contains *twice* the type of the previous parser.
 /// Therefore, the type of the last parser has a size that is
