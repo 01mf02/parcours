@@ -61,7 +61,7 @@ pub mod str;
 /// thus eliminating lifetime hell that stems from returning a `dyn Iterator`.
 /// And thus `parcours` was born.
 ///
-/// ## `self` versus `&self`
+/// ## The Importance of Being Your`self`
 ///
 /// You might ask why [`Parser::parse`] takes `self` instead of `&self`.
 /// After all, the former consumes a parser when calling it, whereas
