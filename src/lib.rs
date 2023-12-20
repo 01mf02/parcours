@@ -406,10 +406,6 @@ pub fn from_fn<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>>(f: F) -> FromFn<
     FromFn(f)
 }
 
-fn fail<I, S, O>() -> impl Parser<I, S, O = O> + Clone {
-    from_fn(|_, _| None)
-}
-
 /// Lazily construct a parser from a function.
 ///
 /// This allows you to create recursive parsers, like so:
