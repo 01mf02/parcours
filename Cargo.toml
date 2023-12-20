@@ -1,8 +1,9 @@
 [package]
 name = "parcours"
 description = "Parser Combinators for Unique Results"
+authors = ["Michael Färber <michael.faerber@gedenkt.at>"]
 version = "0.1.0"
 edition = "2021"
-author = "Michael Färber"
-email = "michael.faerber@gedenkt.at"
 license = "MIT"
+repository = "https://github.com/01mf02/parcours"
+categories = ["parsing"]
