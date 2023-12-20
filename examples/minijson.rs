@@ -69,16 +69,16 @@ fn many(s: &str, n: usize) -> String {
 }
 
 fn main() {
-    let input = std::fs::read_to_string("canada.json").unwrap();
+    //let input = std::fs::read_to_string("canada.json").unwrap();
     /*
     let bla = "y̆es";
     let input = r#"[[1,true  ,   "bla" , 1  , []  ]] []2"#;
     */
-    //let input = many(r#"{"key": 12345}"#, 10_000_000);
+    let input = many(r#"{"key": 12345}"#, 10_000_000);
     println!("{}", input.len());
     let out = space().ignore_then(minijson()).parse(&input, &mut ());
     //println!("{:?}", out);
-    if let Some((out, rest)) = out {
+    if let Some((_out, rest)) = out {
         println!("{:?}", rest);
     }
     //println!("{:?}", recognize("[").parse(input, &mut ()));
