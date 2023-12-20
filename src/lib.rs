@@ -148,7 +148,7 @@ where
 {
     type O;
 
-    /// Parse a value of type `Self::O`.
+    /// Parse a value of type [`Self::O`].
     ///
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)>;
 
