@@ -1,7 +1,7 @@
 //! Art of the State
 
 use parcours::str::{matches, take_while0};
-use parcours::{from_fn, lazy, repeat, Parser};
+use parcours::{from_fn, lazy, Parser};
 
 #[derive(Debug)]
 enum Error<'a> {
@@ -62,11 +62,11 @@ where
 }
 
 fn term<'a>() -> impl Parser<&'a str, State<'a>, O = Term<'a>> {
-    let vars = repeat(ident).delimited_by(token("|"), token("|"));
+    let vars = lazy!(ident).repeated().delimited_by(token("|"), token("|"));
     let abst = vars.and_then(|vars: Vec<_>| {
         with_vars(vars.clone(), lazy!(term)).map(|t| (Term::Abst(vars, Box::new(t))))
     });
-    let args = repeat::<_, Vec<_>>(atomic);
+    let args = lazy!(atomic).repeated::<Vec<_>>();
     let appl = atomic().then(args).map(|(head, args)| {
         if args.is_empty() {
             head

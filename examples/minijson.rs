@@ -1,5 +1,5 @@
 use parcours::str::{matches, take_while0, take_while1};
-use parcours::{any, lazy, separate_by, Parser};
+use parcours::{any, lazy, Parser};
 
 #[derive(Clone, Debug)]
 enum JsonVal<S> {
@@ -32,22 +32,21 @@ fn num<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
     })
 }
 
-fn minijson<'a>() -> impl Parser<&'a str, O = JsonVal<&'a str>> {
-    let rec = || lazy!(minijson);
-    let str_ = || take_while0(|c| *c != b'"').map(|s| s);
-    let str_ = move || str_().delimited_by(matches("\""), matches("\""));
+fn json<'a>() -> impl Parser<&'a str, O = JsonVal<&'a str>> {
+    let str_ = lazy!(|| take_while0(|c| *c != b'"'));
+    let str_ = str_.delimited_by(matches("\""), matches("\""));
 
-    let token = |s: &'a str| matches(s).then_ignore(space());
-    let arr = separate_by(rec, move || token(","));
+    let token = |s: &'a str| matches(s).then_ignore(lazy!(space));
+    let arr = lazy!(json).separated_by(token(","));
     let arr = arr.delimited_by(token("["), matches("]"));
-    let map = move || str_().then_ignore(token(":")).then(rec());
-    let map = separate_by(map, move || token(","));
+    let map = str_.clone().then_ignore(token(":")).then(lazy!(json));
+    let map = map.separated_by(token(","));
     let map = map.delimited_by(token("{"), matches("}"));
 
     any((
         arr.map(JsonVal::Arr),
         map.map(JsonVal::Map),
-        str_().map(JsonVal::Str),
+        str_.map(JsonVal::Str),
         num().map(JsonVal::Num),
         matches("true").map(|_| JsonVal::True),
         matches("false").map(|_| JsonVal::False),
@@ -76,7 +75,7 @@ fn main() {
     */
     let input = many(r#"{"key": 12345}"#, 10_000_000);
     println!("{}", input.len());
-    let out = space().ignore_then(minijson()).parse(&input, &mut ());
+    let out = space().ignore_then(json()).parse(&input, &mut ());
     //println!("{:?}", out);
     if let Some((_out, rest)) = out {
         println!("{:?}", rest);
