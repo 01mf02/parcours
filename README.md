@@ -13,4 +13,4 @@ In the same sense, parcours provides only very basic building blocks for parsers
 but these building blocks are very generic and incur very small overhead,
 so you can do nearly everything with them.
 
-[Parkour]: https://fr.wikipedia.org/wiki/Parkour
+[Parkour]: https://en.wikipedia.org/wiki/Parkour
