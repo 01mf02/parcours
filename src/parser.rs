@@ -214,6 +214,21 @@ where
 #[derive(Clone)]
 pub struct All<T>(T);
 
+/// If all provided parsers succeed, return all of their outputs.
+///
+/// This function takes a tuple of parsers,
+/// which may all return different types of outputs.
+///
+/// ~~~
+/// use parcours::{Parser, all, str::take_while1};
+/// let digit = || take_while1(|c| c.is_ascii_digit());
+/// let alpha = || take_while1(|c| c.is_ascii_alphabetic());
+/// let parser = || all((digit(), alpha(), digit()));
+/// let input = "123abc456 rest";
+/// let output = ("123", "abc", "456");
+/// assert_eq!(parser().parse(input, &mut ()), Some((output, " rest")));
+/// assert_eq!(parser().parse("???", &mut ()), None);
+/// ~~~
 pub fn all<T>(t: T) -> All<T> {
     All(t)
 }
@@ -221,6 +236,20 @@ pub fn all<T>(t: T) -> All<T> {
 #[derive(Clone)]
 pub struct Any<T>(T);
 
+/// Return output of the first provided parser that succeeds.
+///
+/// This function takes a tuple of parsers,
+/// which all have to return the same type of output.
+///
+/// ~~~
+/// use parcours::{Parser, any, str::take_while1};
+/// let digit = || take_while1(|c| c.is_ascii_digit());
+/// let alpha = || take_while1(|c| c.is_ascii_alphabetic());
+/// let parser = || any((digit(), alpha()));
+/// assert_eq!(parser().parse("123abc", &mut ()), Some(("123", "abc")));
+/// assert_eq!(parser().parse("abc123", &mut ()), Some(("abc", "123")));
+/// assert_eq!(parser().parse("???", &mut ()), None);
+/// ~~~
 pub fn any<T>(t: T) -> Any<T> {
     Any(t)
 }
