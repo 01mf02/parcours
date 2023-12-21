@@ -192,6 +192,23 @@ where
         all((l, self, r)).map(|(_l, m, _r)| m)
     }
 
+    fn repeated<O>(self) -> Repeated<Self, fn() -> O>
+    where
+        Self: Clone,
+        O: Default + Extend<Self::O>,
+    {
+        Repeated(self, O::default)
+    }
+
+    fn separated_by<Sep, O>(self, sep: Sep) -> SeparatedBy<Self, Sep, fn() -> O>
+    where
+        Self: Clone,
+        Sep: Parser<I, S> + Clone,
+        O: Default + Extend<Self::O>,
+    {
+        SeparatedBy(self, sep, O::default)
+    }
+
     fn opt(self) -> Opt<Self> {
         Opt(self)
     }
@@ -317,6 +334,10 @@ impl<I: Clone, S, P: Parser<I, S>> Parser<I, S> for Opt<P> {
     }
 }
 
+pub fn repeat<P, O: Default>(p: P) -> Repeat<P, fn() -> O> {
+    Repeat(p, || O::default())
+}
+
 #[derive(Clone)]
 pub struct Repeat<P, O>(P, O);
 
@@ -335,8 +356,17 @@ impl<I: Clone, S, P: Parser<I, S>, O: Extend<P::O>, PF: FnMut() -> P, OF: FnOnce
     }
 }
 
-pub fn repeat<P, O: Default>(p: P) -> Repeat<P, fn() -> O> {
-    Repeat(p, || O::default())
+#[derive(Clone)]
+pub struct Repeated<P, O>(P, O);
+
+impl<I: Clone, S, P: Parser<I, S> + Clone, O: Extend<P::O>, OF: FnOnce() -> O> Parser<I, S>
+    for Repeated<P, OF>
+{
+    type O = O;
+
+    fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
+        Repeat(|| self.0.clone(), self.1).parse(input, state)
+    }
 }
 
 pub fn separate_by<P, Sep, O: Default>(p: P, sep: Sep) -> SeparateBy<P, Sep, fn() -> O> {
@@ -349,14 +379,14 @@ pub struct SeparateBy<P, Sep, O>(P, Sep, O);
 impl<I: Clone, S, P: Parser<I, S>, Sep: Parser<I, S>, O: Extend<P::O>, PF, SepF, OF> Parser<I, S>
     for SeparateBy<PF, SepF, OF>
 where
-    PF: Fn() -> P,
-    SepF: Fn() -> Sep,
+    PF: FnMut() -> P,
+    SepF: FnMut() -> Sep,
     OF: FnOnce() -> O,
 {
     type O = O;
 
     fn parse(self, mut input: I, state: &mut S) -> Option<(Self::O, I)> {
-        let Self(p, sep, init) = self;
+        let Self(mut p, mut sep, init) = self;
         let mut out = init();
         if let Some((head, rest)) = p().parse(input.clone(), state) {
             out.extend(core::iter::once(head));
@@ -374,6 +404,22 @@ where
             }
         }
         Some((out, input))
+    }
+}
+
+#[derive(Clone)]
+pub struct SeparatedBy<P, Sep, O>(P, Sep, O);
+
+impl<I: Clone, S, P, Sep, O: Extend<P::O>, OF> Parser<I, S> for SeparatedBy<P, Sep, OF>
+where
+    P: Parser<I, S> + Clone,
+    Sep: Parser<I, S> + Clone,
+    OF: FnOnce() -> O,
+{
+    type O = O;
+
+    fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
+        SeparateBy(|| self.0.clone(), || self.1.clone(), self.2).parse(input, state)
     }
 }
 
