@@ -254,6 +254,8 @@ pub fn any<T>(t: T) -> Any<T> {
     Any(t)
 }
 
+// This is inspired by:
+// https://github.com/winnow-rs/winnow/blob/02561943e396aab9fc268ec00c88273e3315ef0a/src/parser.rs#L943
 macro_rules! impl_for_tuples {
     ($($acc:ident)+; $head:ident $($tail:ident)*) => {
         impl_for_tuples!($($acc)+      ;          );
