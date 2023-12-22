@@ -253,7 +253,20 @@ pub trait Parser<I, S = ()> {
 /// the type of a parser is determined by how the parser is constructed.
 /// For example, if we have parsers `p1: P1` and `p2: P2` as well as a function `f: F`,
 /// the combined parser `p1.or(p2).map(f)` has the type
-/// `Map<Any<(P1, P2)>, F>`.
+/// `Map<Any<(P1, P2)>, F>`:
+///
+/// ~~~
+/// # use parcours::Parser;
+/// # use parcours::combinator::{Combinator, Any, Map};
+/// fn map_any<I: Clone, S, X, Y, P1, P2, F>(p1: P1, p2: P2, f: F) -> Map<Any<(P1, P2)>, F>
+/// where
+///     P1: Parser<I, S, O = X>,
+///     P2: Parser<I, S, O = X>,
+///     F: FnOnce(X) -> Y,
+/// {
+///     p1.or(p2).map(f)
+/// }
+/// ~~~
 ///
 /// That means that the type of the parser grows with the size of its definition.
 /// The same mechanism occurs when using traits like [`Iterator`].
