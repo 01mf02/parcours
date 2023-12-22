@@ -1,150 +1,9 @@
-/// A parser takes input and mutable state, and maybe yields an output and remaining input.
-///
-/// # History
-///
-/// This trait, and especially its function [`Parser::parse`] shapes everything that goes on in this crate.
-/// It is inspired to a great extent by a rhyme:
-///
-/// > *A Parser for Things  
-/// > is a function from Strings  
-/// > to Lists of Pairs  
-/// > of Things and Strings!*  
-/// > (Fritz Ruehr, ["Dr. Seuss on Parser Monads"](https://willamette.edu/~fruehr/haskell/seuss.html))
-///
-/// Ruehr uses the following type signature for parsers in Haskell:
-///
-/// ~~~ haskell
-/// type Parser a = String -> [(a, String)]
-/// ~~~
-///
-/// The function signature in this crate diverges from that in several aspects:
-///
-/// * It generalises the type of input to be `I`,
-///   whereas it is always `String` in the Haskell case.
-/// * It takes some mutable reference to a state `S`,
-///   which is passed to every sub-parser and can be very useful,
-///   for example to keep track of errors.
-/// * The largest change, however, is the output type, which is
-///   an `Option` instead of a list in Haskell.
-///
-/// The last change deserves some justification.
-/// I tried for some time to recreate Ruehr's approach,
-/// using `Iterator` as output type,
-/// because this most closely resembles Haskell's lazy lists.
-/// (The codename for this experiment was "parasite", standing for
-/// "parsers as iterators".)
-/// I imagined the ideal type signature to resemble this:
-///
-/// ~~~
-/// trait Parser<I> {
-///     type O;
-///     fn parse(&self, x: I) -> Box<dyn Iterator<Item = (Self::O, I)>>;
-/// }
-/// ~~~
-///
-/// However, as I pursued with this approach,
-/// I found myself quickly in lifetime and typing hell.
-/// Everything was so hard that I stepped back and asked myself:
-///
-/// > *Is this too much Voodoo?*  
-/// > (Terry Davis, ["Hardest Question in Programming"](https://www.youtube.com/watch?v=EAeYn1xWqm8))
-///
-/// I then thought that for my purposes,
-/// I could actually do with a single output (instead of arbitrarily many),
-/// thus eliminating lifetime hell that stems from returning a `dyn Iterator`.
-/// And thus `parcours` was born.
-///
-/// ## The Importance of Being Your`self`
-///
-/// You might ask why [`Parser::parse`] takes `self` instead of `&self`.
-/// After all, the former consumes a parser when calling it, whereas
-/// the latter allows calling a parser multiple times.
-///
-/// To answer your question, curious reader,
-/// let us suppose that the [`Parser`] trait was defined as follows:
-///
-/// ~~~
-/// pub trait Parser<I, S = ()> {
-///     type O;
-///     fn parse(&self, input: I, state: &mut S) -> Option<(Self::O, I)>;
-/// }
-/// ~~~
-///
-/// This is basically the same as what we have in parcours, only that
-/// `parse` takes `&self`, not `self`.
-///
-/// The problem with this approach is that it effectively
-/// **prohibits the construction of parsers that take [`FnOnce`] closures**.
-/// That is because we cannot call an [`FnOnce`] if we have a reference to it:
-///
-/// ~~~ compile_fail
-/// fn call_fn_once(f: &impl FnOnce()) {
-///     f()
-/// }
-/// ~~~
-///
-/// And that means that if we have only a *reference* to a parser,
-/// the parser cannot call any [`FnOnce`] closure that it might possess.
-/// Which is logical, if you consider that a function taking `&self`
-/// can be called arbitrarily often on some object,
-/// yet [`FnOnce`] means that it can be called, well, only once.
-/// This clashes.
-///
-/// So what's the big deal about [`FnOnce`]? Can't we just use [`Fn`] and take `&self`?
-/// Yes, we can. That's actually the first thing I tried.
-/// But this has a double negative impact on performance.
-/// First, while it allows us to take a `Box<dyn Parser>` and call `parse` on it,
-/// I found in benchmarks that just putting a single `Box` around a (heavily used) parser
-/// increased runtime by about 10%.
-/// So just being able to box a parser might tempt people to do it,
-/// without realising the negative impact on performance.
-/// Furthermore, when we use [`Fn`], we tend to have to move and clone more data.
-/// Consider the following example, which is a very inefficient implementation of
-/// [`core::iter::once`]:
-///
-/// ~~~ compile_fail
-/// pub fn stupid_once<T>(x: T) -> impl Iterator<Item = T> {
-///     core::iter::once(0).map(|_| x)
-/// }
-/// ~~~
-///
-/// Here, the compiler errors lead us quickly to the following solution:
-///
-/// ~~~
-/// pub fn stupid_once<T: Clone>(x: T) -> impl Iterator<Item = T> {
-///     core::iter::once(0).map(move |_| x.clone())
-/// }
-/// ~~~
-///
-/// This means that we *have* to clone `x` here,
-/// even if we know that it will be returned just once.
-/// That is because [`Iterator::map`] does not accept [`FnOnce`].
-/// This pattern showed up a lot when using
-/// the alternative `Parser` trait where `parse()` takes `&self`.
-/// Aside from looking verbose, it is bad for performance.
-///
-/// On the other hand, take the following implementation:
-///
-/// ~~~
-/// pub fn nice_once<T>(x: T) -> Option<T> {
-///     Some(0).map(|_| x)
-/// }
-/// ~~~
-///
-/// Here, because [`Option::map`] takes [`FnOnce`], we neither have to move nor clone `x`.
-///
-/// All this means that once there was the decision for [`Parser::parse`] to return [`Option`],
-/// there was a clear incentive to take `self` in [`Parser::parse`] in order to allow for [`FnOnce`].
-pub trait Parser<I, S = ()>
+use crate::Parser;
+
+pub trait Combinator<I, S>: Parser<I, S>
 where
     Self: Sized,
 {
-    type O;
-
-    /// Parse a value of type [`Self::O`].
-    ///
-    fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)>;
-
     fn then<P: Parser<I, S>>(self, other: P) -> All<(Self, P)> {
         All((self, other))
     }
@@ -210,6 +69,8 @@ where
         AndThen(self, f)
     }
 }
+
+impl<I, S, T: Parser<I, S>> Combinator<I, S> for T {}
 
 #[derive(Clone)]
 pub struct All<T>(T);

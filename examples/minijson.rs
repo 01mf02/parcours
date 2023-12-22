@@ -1,5 +1,5 @@
 use parcours::str::{matches, take_while0, take_while1};
-use parcours::{any, lazy, Parser};
+use parcours::{any, lazy, Combinator, Parser};
 
 #[derive(Clone, Debug)]
 enum JsonVal<S> {

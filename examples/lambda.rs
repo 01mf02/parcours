@@ -1,7 +1,7 @@
 //! Art of the State
 
 use parcours::str::{matches, take_while0};
-use parcours::{from_fn, lazy, Parser};
+use parcours::{from_fn, lazy, Combinator, Parser};
 
 #[derive(Debug)]
 enum Error<'a> {

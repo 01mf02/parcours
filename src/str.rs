@@ -1,6 +1,6 @@
 //! Parsers for [`&str`] input.
 
-use crate::{from_fn, Parser};
+use crate::{from_fn, Combinator, Parser};
 
 pub fn take_while0<'a, S>(mut f: impl FnMut(&u8) -> bool) -> impl Parser<&'a str, S, O = &'a str> {
     from_fn(move |input: &'a str, _state: &mut S| {
