@@ -115,8 +115,42 @@ pub fn any<T>(t: T) -> Any<T> {
     Any(t)
 }
 
-// This is inspired by:
-// https://github.com/winnow-rs/winnow/blob/02561943e396aab9fc268ec00c88273e3315ef0a/src/parser.rs#L943
+/// Generate parsing code for `Any<(P0, P1, ..., Pn)>`.
+///
+/// `impl_any!(input, state, p0 p1 ... pn)` generates the following code:
+///
+/// ~~~
+/// # use parcours::Parser;
+/// # fn test<I: Clone, S, O, P: Parser<I, S, O = O>>(input: I, state: &mut S, p0: P, p1: P, pn: P) -> Option<(O, I)> {
+/// if let Some(y) = p0.parse(input.clone(), state) {
+///     return Some(y)
+/// }
+/// if let Some(y) = p1.parse(input.clone(), state) {
+///     return Some(y)
+/// }
+/// // ...
+/// return pn.parse(input, state)
+/// # }
+/// ~~~
+///
+/// The idea behind it is that the input has to be cloned for all but the last parser,
+/// which is able to consume the input.
+macro_rules! impl_any {
+    ($input:ident, $state:ident, $head:ident $($tail:ident)+) => {
+        if let Some(y) = $head.parse($input.clone(), $state) {
+            return Some(y)
+        }
+        impl_any!($input, $state, $($tail)+)
+    };
+    ($input:ident, $state:ident, $head:ident) => {
+        return $head.parse($input, $state)
+    }
+}
+
+/// Generate `impl`s for `Any<(P0, P1, ..., Pn)>` and `All<(P0, P1, ..., Pn)>`.
+///
+/// This is inspired by winnow's
+/// [`impl_parser_for_tuples`](https://github.com/winnow-rs/winnow/blob/02561943e396aab9fc268ec00c88273e3315ef0a/src/parser.rs#L943).
 macro_rules! impl_for_tuples {
     ($($acc:ident)+; $head:ident $($tail:ident)*) => {
         impl_for_tuples!($($acc)+      ;          );
@@ -142,10 +176,7 @@ macro_rules! impl_for_tuples {
             #[inline(always)]
             fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
                 let Self(($($parser),+,)) = self;
-                $(if let Some(y) = $parser.parse(input.clone(), state) {
-                    return Some(y)
-                })+
-                None
+                impl_any!(input, state, $($parser)*);
             }
         }
     }
