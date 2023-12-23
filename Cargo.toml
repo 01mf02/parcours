@@ -7,3 +7,4 @@ edition = "2021"
 license = "MIT"
 repository = "https://github.com/01mf02/parcours"
 categories = ["parsing"]
+rust-version = "1.56"
