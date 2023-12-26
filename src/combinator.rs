@@ -1,3 +1,5 @@
+//! Create new parsers by combining existing ones.
+
 use crate::Parser;
 
 pub trait Combinator<I, S>: Parser<I, S>
@@ -72,6 +74,9 @@ where
 
 impl<I, S, T: Parser<I, S>> Combinator<I, S> for T {}
 
+/// A parser that returns all outputs of its contained parsers.
+///
+/// This is returned by [`all`].
 #[derive(Clone)]
 pub struct All<T>(T);
 
@@ -94,6 +99,9 @@ pub fn all<T>(t: T) -> All<T> {
     All(t)
 }
 
+/// A parser that returns the output of the first contained parser that succeeds.
+///
+/// This is returned by [`any`].
 #[derive(Clone)]
 pub struct Any<T>(T);
 
