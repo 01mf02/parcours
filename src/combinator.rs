@@ -10,6 +10,8 @@
 //!   functions that yield combinators ([`repeat`], [`separate_by`]) or
 //!   n-tuples of combinators ([`any`], [`all`]).
 //!
+//! # Overview
+//!
 //! The following table gives an overview of the main combinators in parcours.
 //! Here, `a` and `b` are two languages that are recognized by parsers of the same name.
 //!
@@ -24,13 +26,35 @@
 //! | `a+`                 | [`a.repeated()`](Combinator::repeated).[<code>filter(\|o\| !o.is_empty())</code>](Combinator::filter)
 //! | `(a(ba)*)?`          | [`a.separated_by(b)`](Combinator::separated_by) or [`separate_by(a, b)`](separate_by)
 //!
-//! To use the [`Combinator`] trait, import it as follows:
+//! We also have a few combinators that operate on the output of a parser `a`.
+//! These are defined as follows:
 //!
-//! ~~~
-//! use parcours::Combinator;
-//! ~~~
+//! Parser `p`                                  | `p.parse(i, s)`
+//! :------------------------------------------ | :---------------------------------------------
+//! [`a.map(f)`](Combinator::map)               | <code>a.parse(i, s).map(\|(y, rest)\| (f(y), rest))</code>
+//! [`a.map_with(f)`](Combinator::map_with)     | <code>a.parse(i, s).map(\|(y, rest)\| (f(y, s), rest))</code>
+//! [`a.filter(f)`](Combinator::filter)         | <code>a.parse(i, s).filter(\|(y, rest)\| f(y))</code>
+//! [`a.filter_map(f)`](Combinator::filter_map) | <code>a.parse(i, s).and_then(\|(y, rest)\| Some((f(y)?, rest)))</code>
+//! [`a.and_then(f)`](Combinator::and_then)     | <code>a.parse(i, s).and_then(\|(y, rest)\| f(y).parse(rest, s))</code>
+//!
+//! Last, but not least, we have a few combinators that throw away results.
+//! For parsers `a`, `b`, and `c`, we have:
+//!
+//! Parser                                             | Definition
+//! :------------------------------------------------- | :-------------------------------------------------
+//! [`a.then_ignore(b)`](Combinator::then_ignore)      | <code>a.then(b).map(\|(a, _b)\| a)</code>
+//! [`a.ignore_then(b)`](Combinator::ignore_then)      | <code>a.then(b).map(\|(_a, b)\| b)</code>
+//! [`b.delimited_by(a, c)`](Combinator::delimited_by) | <code>all((a, b, c)).map(\|(_a, b, _c)\| b)</code>
 use crate::Parser;
 
+/// A combinator combines parsers to form new ones.
+///
+/// Every [`Parser`] implements the [`Combinator`] trait.
+/// To use the [`Combinator`] trait, import it as follows:
+///
+/// ~~~
+/// use parcours::Combinator;
+/// ~~~
 pub trait Combinator<I, S>: Parser<I, S>
 where
     Self: Sized,
@@ -282,7 +306,7 @@ impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O) -> Option<O>> Parser<I, S> for Fi
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
         self.0
             .parse(input, state)
-            .and_then(|(y, rest)| self.1(y).map(|y| (y, rest)))
+            .and_then(|(y, rest)| Some((self.1(y)?, rest)))
     }
 }
 
