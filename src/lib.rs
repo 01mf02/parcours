@@ -7,7 +7,7 @@ pub mod prec_climb;
 pub mod str;
 
 #[doc(inline)]
-pub use combinator::{all, any, from_fn, repeat, separate_by, Combinator};
+pub use combinator::{all, any, repeat, separate_by, Combinator};
 
 /// A parser takes input and mutable state, and maybe yields an output and remaining input.
 ///
@@ -151,6 +151,56 @@ pub trait Parser<I, S = ()> {
 
     /// Parse a value of type [`Self::O`].
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)>;
+}
+
+/// Construct a parser from a function.
+///
+/// This is similar to [`core::iter::from_fn`].
+/// It can be used to write a custom parser without having to write a lot of code.
+/// For example, consider the following parser `value(o)` that simply returns
+/// `o` without consuming any input:
+///
+/// ~~~
+/// # use parcours::Parser;
+/// fn value<O>(o: O) -> Value<O> {
+///     Value(o)
+/// }
+///
+/// struct Value<O>(O);
+///
+/// impl<I, S, O> Parser<I, S> for Value<O> {
+///     type O = O;
+///
+///     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
+///         Some((self.0, input))
+///     }
+/// }
+/// ~~~
+///
+/// `value` can be written more concisely as:
+///
+/// ~~~
+/// # use parcours::{Parser, from_fn};
+/// fn value<I, S, O>(o: O) -> impl Parser<I, S, O = O> {
+///     from_fn(|input, _state| Some((o, input)))
+/// }
+/// ~~~
+pub fn from_fn<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>>(f: F) -> FromFn<F> {
+    FromFn(f)
+}
+
+/// A parser that returns the output of the function `F` called with given input and state.
+///
+/// This is returned by [`from_fn`].
+#[derive(Clone)]
+pub struct FromFn<F>(F);
+
+impl<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>> Parser<I, S> for FromFn<F> {
+    type O = O;
+
+    fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
+        self.0(input, state)
+    }
 }
 
 /// Lazily construct a parser from a function.

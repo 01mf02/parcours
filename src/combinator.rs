@@ -121,7 +121,7 @@ pub fn any<T>(t: T) -> Any<T> {
 ///
 /// ~~~
 /// # use parcours::Parser;
-/// # fn test<I: Clone, S, O, P: Parser<I, S, O = O>>(input: I, state: &mut S, p0: P, p1: P, pn: P) -> Option<(O, I)> {
+/// # fn f<I: Clone, S, O, P: Parser<I, S, O = O>>(input: I, state: &mut S, p0: P, p1: P, pn: P) -> Option<(O, I)> {
 /// if let Some(y) = p0.parse(input.clone(), state) {
 ///     return Some(y)
 /// }
@@ -350,20 +350,5 @@ impl<I, S, P1: Parser<I, S>, P2: Parser<I, S>, F: FnOnce(P1::O) -> P2> Parser<I,
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
         let (y, rest) = self.0.parse(input, state)?;
         self.1(y).parse(rest, state)
-    }
-}
-
-pub fn from_fn<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>>(f: F) -> FromFn<F> {
-    FromFn(f)
-}
-
-#[derive(Clone)]
-pub struct FromFn<F>(F);
-
-impl<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>> Parser<I, S> for FromFn<F> {
-    type O = O;
-
-    fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
-        self.0(input, state)
     }
 }
