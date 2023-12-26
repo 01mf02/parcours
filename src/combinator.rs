@@ -1,15 +1,60 @@
 //! Create new parsers by combining existing ones.
-
+//!
+//! There are two flavours of combinators in parcours:
+//!
+//! * Combinators in the [`Combinator`] trait:
+//!   These take a fixed number of parsers; for example,
+//!   [`Combinator::opt`] takes one parser and
+//!   [`Combinator::then`] takes two parsers.
+//! * Combinators outside the [`Combinator`] trait: These either take
+//!   functions that yield combinators ([`repeat`], [`separate_by`]) or
+//!   n-tuples of combinators ([`any`], [`all`]).
+//!
+//! The following table gives an overview of the main combinators in parcours.
+//! Here, `a` and `b` are two languages that are recognized by parsers of the same name.
+//!
+//! | Language             | Parser
+//! | :------------------- | :----------------------
+//! | `ab`                 | [`a.then(b)`](Combinator::then)
+//! | `abc`                | [`a.then(b).then(c)`](Combinator::then) or [`all((a, b, c))`](all)
+//! | <code>a\|b</code>    | [`a.or(b)`](Combinator::or)
+//! | <code>a\|b\|c</code> | [`a.or(b).or(c)`](Combinator::or) or [`any((a, b, c))`](any)
+//! | `a?`                 | [`a.opt()`](Combinator::opt)
+//! | `a*`                 | [`a.repeated()`](Combinator::repeated) or [`repeat(a)`](repeat)
+//! | `a+`                 | [`a.repeated()`](Combinator::repeated).[<code>filter(\|o\| !o.is_empty())</code>](Combinator::filter)
+//! | `(a(ba)*)?`          | [`a.separated_by(b)`](Combinator::separated_by) or [`separate_by(a, b)`](separate_by)
+//!
+//! To use the [`Combinator`] trait, import it as follows:
+//!
+//! ~~~
+//! use parcours::Combinator;
+//! ~~~
 use crate::Parser;
 
 pub trait Combinator<I, S>: Parser<I, S>
 where
     Self: Sized,
 {
+    /// If both parsers yield an output, return the pair of their outputs.
+    ///
+    /// The expression `p0.then(p1)` is equivalent to `all((p0, p1))`.
+    /// However, `p0.then(p1).then(p2)` is equivalent to
+    /// `all((all((p0, p1)), p2))` not
+    /// `all((p0, p1, p2))`.
+    /// That means that if you chain together more than two parsers with `then`,
+    /// things might get a bit messy, because you get nested tuples.
+    /// In that case, using [`all`] directly is preferable.
     fn then<P: Parser<I, S>>(self, other: P) -> All<(Self, P)> {
         All((self, other))
     }
 
+    /// If the first parser succeeds, return its output, otherwise
+    /// return the output of the second parser.
+    ///
+    /// The expression `p0.or(p1)/*...*/.or(pn)` is equivalent to
+    /// `any((p0, p1,/*..., */pn))`.
+    /// However, if more than two parsers are combined,
+    /// [`any`] might yield better performance.
     fn or<P: Parser<I, S>>(self, other: P) -> Any<(Self, P)> {
         Any((self, other))
     }
