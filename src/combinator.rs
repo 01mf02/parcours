@@ -361,16 +361,22 @@ impl<I: Clone, S, P: Parser<I, S>> Parser<I, S> for Opt<P> {
 /// Because the parser function is [`FnMut`],
 /// it can yield *different* parsers on each repetition.
 /// The following example shows a parser that matches
-/// the regular expression `(ab)*`:
+/// the sequence of numbers starting from 1:
 ///
 /// ~~~
-/// # use parcours::{Parser, repeat, str::matches};
-/// let mut even = false;
-/// let p = repeat(|| {
-///     even = !even;
-///     matches(if even { "a" } else { "b" })
+/// # use parcours::{Parser, from_fn, repeat};
+/// // it would be nice to use `str::matches(&i.to_string())` here,
+/// // but unfortunately, we cannot do that,
+/// // because it references a temporary value (`&i.to_string()`)
+/// let match_num = |i: usize| from_fn(move |input: &str, _state| {
+///     input.strip_prefix(&i.to_string()).map(|rest| ((), rest))
 /// });
-/// assert_eq!(p.parse("abab", &mut ()), Some(((), "")));
+/// let mut i = 0;
+/// let p = repeat(|| {
+///     i += 1;
+///     match_num(i)
+/// });
+/// assert_eq!(p.parse("12345", &mut ()), Some(((), "")));
 /// ~~~
 pub fn repeat<I, S, P: Parser<I, S>, PF: FnMut() -> P, O>(p: PF) -> Repeat<PF, fn() -> O>
 where
