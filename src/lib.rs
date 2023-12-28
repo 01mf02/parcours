@@ -4,6 +4,7 @@
 
 pub mod combinator;
 pub mod prec_climb;
+pub mod slice;
 pub mod str;
 
 #[doc(inline)]
@@ -429,6 +430,21 @@ impl<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>> Parser<I, S> for FromFn<F>
 #[macro_export]
 macro_rules! lazy {
     ($p:expr) => {
-        parcours::from_fn(|input, state| $p().parse(input, state))
+        $crate::from_fn(|input, state| $p().parse(input, state))
     };
+}
+
+#[macro_export]
+macro_rules! lazy_move {
+    ($p:expr) => {
+        $crate::from_fn(move |input, state| $p().parse(input, state))
+    };
+}
+
+#[macro_export]
+macro_rules! select {
+    ($($p:pat $(if $guard:expr)? => $out:expr),+ $(,)?) => (|x| match x {
+        $($p $(if $guard)? => ::core::option::Option::Some($out)),+,
+        _ => ::core::option::Option::None,
+    });
 }
