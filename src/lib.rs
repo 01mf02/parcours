@@ -441,6 +441,39 @@ macro_rules! lazy_move {
     };
 }
 
+/// Pattern matching for successful cases.
+///
+/// When using functions like [`slice::first_filter_map`],
+/// we frequently end up with patterns like this:
+///
+/// ~~~
+/// # use parcours::{Parser, slice};
+/// let p = || slice::first_filter_map(|x| match x {
+///     0 => Some(false),
+///     1 => Some(true),
+///     _ => None,
+/// });
+/// assert_eq!(p().parse(&[0], &mut ()), Some((false, &[] as &[usize])));
+/// assert_eq!(p().parse(&[1], &mut ()), Some((true, &[] as &[usize])));
+/// ~~~
+///
+/// In the `match` statement, we have a few cases that yield [`Some`],
+/// followed by a final one yielding [`None`].
+/// Because this is such a common case, `select!` allows us to write it like that:
+///
+/// ~~~
+/// # use parcours::{Parser, select, slice};
+/// let p = || slice::first_filter_map(select!(
+///     0 => false,
+///     1 => true,
+/// ));
+/// assert_eq!(p().parse(&[0], &mut ()), Some((false, &[] as &[usize])));
+/// assert_eq!(p().parse(&[1], &mut ()), Some((true, &[] as &[usize])));
+/// ~~~
+///
+/// We can also use pattern guards like in normal `match` statements.
+///
+/// This is inspired by [chumsky's `select!` macro](https://github.com/zesterer/chumsky/blob/40fe7d1966f375b3c676d01e04c5dca08f7615ac/src/lib.rs#L1486).
 #[macro_export]
 macro_rules! select {
     ($($p:pat $(if $guard:expr)? => $out:expr),+ $(,)?) => (|x| match x {
