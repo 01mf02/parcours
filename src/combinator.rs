@@ -192,6 +192,20 @@ pub fn any<T>(t: T) -> Any<T> {
     Any(t)
 }
 
+impl<I: Clone, S, O, P: Parser<I, S, O = O>, const N: usize> Parser<I, S> for Any<[P; N]> {
+    type O = O;
+
+    fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
+        // TODO: Avoid clone() for last parser!
+        for p in self.0 {
+            if let Some((y, rest)) = p.parse(input.clone(), state) {
+                return Some((y, rest));
+            }
+        }
+        None
+    }
+}
+
 /// Generate parsing code for `Any<(P0, P1, ..., Pn)>`.
 ///
 /// `impl_any!(input, state, p0 p1 ... pn)` generates the following code:
