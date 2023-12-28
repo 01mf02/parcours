@@ -123,6 +123,16 @@ where
         Repeated(self, O::default)
     }
 
+    /// Apply the given parser as often as possible, separated by `sep`.
+    ///
+    /// `a.separated_by(b)` corresponds to the regular expression `(a(ba)*)?`.
+    /// The output of this parser is the collection of the outputs of `a`;
+    /// that is, the outputs of `b` are discarded.
+    /// Trailing `b`s are not consumed; for this, use
+    /// `a.separated_by(b).then_ignore(b.opt())`.
+    ///
+    /// To keep the outputs of `b` and demand at least one match of `a`,
+    /// you may use `a.then(b.then(a).repeated())` instead.
     fn separated_by<Sep, O>(self, sep: Sep) -> SeparatedBy<Self, Sep, fn() -> O>
     where
         Self: Clone,
@@ -400,7 +410,23 @@ impl<I: Clone, S, P: Parser<I, S> + Clone, O: Extend<P::O>, OF: FnOnce() -> O> P
     }
 }
 
-pub fn separate_by<P, Sep, O: Default>(p: P, sep: Sep) -> SeparateBy<P, Sep, fn() -> O> {
+/// Apply a parser `p()` as often as possible, separated by `sep()`.
+///
+/// This is a more general version of [`Combinator::separated_by`],
+/// which operates on two parsers that must implement [`Clone`],
+/// whereas this function takes two functions that yield parsers
+/// (which do not necessarily implement [`Clone`]).
+///
+/// See [`repeat`] for an example how to exploit this.
+pub fn separate_by<I, S, P: Parser<I, S>, Sep: Parser<I, S>, PF, SepF, O>(
+    p: PF,
+    sep: SepF,
+) -> SeparateBy<PF, SepF, fn() -> O>
+where
+    PF: FnMut() -> P,
+    SepF: FnMut() -> Sep,
+    O: Default + Extend<P::O>,
+{
     SeparateBy(p, sep, || O::default())
 }
 
