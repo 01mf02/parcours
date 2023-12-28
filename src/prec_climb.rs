@@ -4,7 +4,7 @@
 //! <https://ycpcs.github.io/cs340-fall2017/lectures/lecture06.html#implementation>.
 //!
 //! ~~~
-//! use parcours::prec_climb::{self, Associativity, Expr};
+//! use parcours::prec_climb::{self, Associativity};
 //!
 //! enum Op {
 //!     Add,
@@ -26,7 +26,7 @@
 //!     }
 //! }
 //!
-//! impl Expr<Op> for isize {
+//! impl prec_climb::Expr<Op> for isize {
 //!     fn from_op(lhs: Self, op: Op, rhs: Self) -> Self {
 //!         match op {
 //!             Op::Add => lhs + rhs,
@@ -64,7 +64,6 @@ pub trait Expr<O: Op> {
     fn from_op(lhs: Self, op: O, rhs: Self) -> Self;
 }
 
-//
 pub fn climb<O: Op, T: Expr<O>>(head: T, iter: impl IntoIterator<Item = (O, T)>) -> T {
     climb1(head, &mut iter.into_iter().peekable(), 0)
 }
