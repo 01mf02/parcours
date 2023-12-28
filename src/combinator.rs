@@ -341,7 +341,31 @@ impl<I: Clone, S, P: Parser<I, S>> Parser<I, S> for Opt<P> {
     }
 }
 
-pub fn repeat<P, O: Default>(p: P) -> Repeat<P, fn() -> O> {
+/// Apply a parser as often as possible.
+///
+/// This is a more general version of [`Combinator::repeated`],
+/// which takes a single parser that must implement [`Clone`],
+/// whereas this function takes a *function* that produces parsers
+/// (which do not have to implement [`Clone`]).
+///
+/// Because the parser function is [`FnMut`],
+/// it can yield *different* parsers on each repetition.
+/// The following example shows a parser that matches
+/// the regular expression `(ab)*`:
+///
+/// ~~~
+/// # use parcours::{Parser, repeat, str::matches};
+/// let mut even = false;
+/// let p = repeat(|| {
+///     even = !even;
+///     matches(if even { "a" } else { "b" })
+/// });
+/// assert_eq!(p.parse("abab", &mut ()), Some(((), "")));
+/// ~~~
+pub fn repeat<I, S, P: Parser<I, S>, PF: FnMut() -> P, O>(p: PF) -> Repeat<PF, fn() -> O>
+where
+    O: Default + Extend<P::O>,
+{
     Repeat(p, || O::default())
 }
 
