@@ -204,6 +204,10 @@ impl<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>> Parser<I, S> for FromFn<F>
     }
 }
 
+pub fn from_fn_input<I, S>(f: impl FnOnce(I) -> Option<I>) -> impl Parser<I, S, O = ()> {
+    from_fn(move |input: I, _state: &mut S| f(input).map(|rest| ((), rest)))
+}
+
 /// Lazily construct a parser from a function.
 ///
 /// # Use cases
