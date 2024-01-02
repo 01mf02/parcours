@@ -288,13 +288,16 @@ impl<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>> Parser<I, S> for FromFn<F>
 ///
 /// ## Make [`Parser`] clonable
 ///
-/// There are some parsers, such as [`str::take_while0`], that do not implement [`Clone`].
-/// In such a case, we can make it clonable by wrapping it in a little [`lazy!`] call:
+/// If you have a parser that does not implement [`Clone`],
+/// you might make it clonable by wrapping it in a little [`lazy!`] call:
 ///
 /// ~~~
-/// # use parcours::{Parser, lazy, str::take_while0};
-/// fn everything<'a>() -> impl Parser<&'a str, O = &'a str> + Clone {
-///     lazy!(|| take_while0(|_| true))
+/// # use parcours::{Parser, lazy, str::take_while};
+/// fn non_clonable<'a>() -> impl Parser<&'a str, O = &'a str> {
+///     take_while(|_, _| true)
+/// }
+/// fn clonable<'a>() -> impl Parser<&'a str, O = &'a str> + Clone {
+///     lazy!(clonable)
 /// }
 /// ~~~
 ///

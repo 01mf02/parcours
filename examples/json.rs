@@ -1,4 +1,4 @@
-use parcours::str::{matches, take_while0};
+use parcours::str::{matches, take_while};
 use parcours::{any, lazy, Combinator, Parser};
 
 #[derive(Clone, Debug)]
@@ -12,15 +12,15 @@ enum JsonVal<S> {
     Null,
 }
 
-fn space<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
-    take_while0(|c| c.is_ascii_whitespace())
+fn space<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
+    take_while(|c, _| c.is_ascii_whitespace())
 }
 
 fn num<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
     let mut first = true;
     let mut no_dot = true;
     let mut no_exp = true;
-    take_while0(move |c| match c {
+    take_while(move |c, _| match c {
         b'0'..=b'9' => {
             first = false;
             true
@@ -36,9 +36,9 @@ fn num<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
     })
 }
 
-fn str<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
+fn str<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
     let mut escaped = false;
-    take_while0(move |c| match c {
+    take_while(move |c, _| match c {
         b'\\' if !escaped => {
             escaped = true;
             true
@@ -48,7 +48,6 @@ fn str<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
         _ => true,
     })
 }
-
 
 fn json<'a>() -> impl Parser<&'a str, O = JsonVal<&'a str>> {
     let str = lazy(str).delimited_by(matches("\""), matches("\""));

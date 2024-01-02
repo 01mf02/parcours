@@ -1,76 +1,29 @@
 //! Parsers for [`&str`] input.
 
+use crate::combinator::Filter;
 use crate::{from_fn, Combinator, Parser};
 
 /// Collect longest prefix of a [`&str`] whose bytes satisfies the given condition.
-///
-/// # Implementation notes
-///
-/// The parser returned by this function does not implement [`Clone`],
-/// because it is supposed to also accept functions that do not implement [`Clone`].
-/// However, we could make this function return a parser that conditionally implements [`Clone`],
-/// by making it return some struct `TakeWhile<F>` that implements [`Clone`] when `F` implements [`Clone`].
-///
-/// ~~~
-/// # use parcours::Parser;
-/// pub fn take_while0<'a, F: FnMut(&u8) -> bool>(f: F) -> TakeWhile<F> {
-///     TakeWhile(f)
-/// }
-///
-/// #[derive(Clone)]
-/// pub struct TakeWhile<F>(F);
-///
-/// impl<'a, S, F: FnMut(&u8) -> bool> Parser<&'a str, S> for TakeWhile<F> {
-///     type O = &'a str;
-///
-///     fn parse(mut self, input: &'a str, _state: &mut S) -> Option<(Self::O, &'a str)> {
-///         let len = input.bytes().take_while(|c| self.0(c)).count();
-///         Some((&input[..len], &input[len..]))
-///     }
-/// }
-/// ~~~
-///
-/// However, when I tried this approach, I had the problem that type inference
-/// frequently broke down when using [`take_while0`],
-/// because `TakeWhile` does not contain any information about `S`.
-/// To fix this, we can put `S` into a [`PhantomData`](core::marker::PhantomData) in `TakeWhile`:
-///
-/// ~~~
-/// # use core::marker::PhantomData;
-/// # use parcours::Parser;
-/// pub fn take_while0<'a, S, F: FnMut(&u8) -> bool>(f: F) -> TakeWhile<S, F> {
-///     TakeWhile(PhantomData::default(), f)
-/// }
-///
-/// #[derive(Clone)]
-/// pub struct TakeWhile<S, F>(PhantomData<S>, F);
-///
-/// impl<'a, S, F: FnMut(&u8) -> bool> Parser<&'a str, S> for TakeWhile<S, F> {
-///     type O = &'a str;
-///
-///     fn parse(mut self, input: &'a str, _state: &mut S) -> Option<(Self::O, &'a str)> {
-///         let len = input.bytes().take_while(|c| self.1(c)).count();
-///         Some((&input[..len], &input[len..]))
-///     }
-/// }
-/// ~~~
-///
-/// However, here we have the problem that the automatic derivation of
-/// [`Clone`] imposes that `S` has to implement [`Clone`], which is unnecessary.
-/// So we would have to implement [`Clone`] ourselves.
-/// At this point, I consider it not worth going through all this hassle just to get [`Clone`].
-///
-/// If you have a better idea how to make [`take_while0`] implement [`Clone`]
-/// whenever its input function implements [`Clone`], I would be curious to hear about it!
-pub fn take_while0<'a, S>(mut f: impl FnMut(&u8) -> bool) -> impl Parser<&'a str, S, O = &'a str> {
-    from_fn(move |input: &'a str, _state: &mut S| {
-        let len = input.bytes().take_while(|c| f(c)).count();
-        Some((&input[..len], &input[len..]))
-    })
+pub fn take_while<'a, S, F: FnMut(&u8, &mut S) -> bool>(f: F) -> TakeWhile<F> {
+    TakeWhile(f)
 }
 
-pub fn take_while1<'a, S>(f: impl FnMut(&u8) -> bool) -> impl Parser<&'a str, S, O = &'a str> {
-    take_while0(f).filter(|n| !n.is_empty())
+#[derive(Clone)]
+pub struct TakeWhile<F>(F);
+
+impl<'a, S, F: FnMut(&u8, &mut S) -> bool> Parser<&'a str, S> for TakeWhile<F> {
+    type O = &'a str;
+
+    fn parse(mut self, input: &'a str, state: &mut S) -> Option<(Self::O, &'a str)> {
+        let len = input.bytes().take_while(|c| self.0(c, state)).count();
+        Some((&input[..len], &input[len..]))
+    }
+}
+
+type TakeWhile1<F> = Filter<TakeWhile<F>, fn(&&str) -> bool>;
+
+pub fn take_while1<'a, S, F: FnMut(&u8, &mut S) -> bool>(f: F) -> TakeWhile1<F> {
+    take_while(f).filter(|n| !n.is_empty())
 }
 
 pub fn matches<'a, 'i: 'a, S>(x: &'a str) -> impl Parser<&'i str, S, O = ()> + Clone + 'a {

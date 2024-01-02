@@ -1,6 +1,6 @@
 //! Art of the State
 
-use parcours::str::{matches, take_while0};
+use parcours::str::{matches, take_while};
 use parcours::{from_fn, lazy, Combinator, Parser};
 
 #[derive(Debug)]
@@ -14,14 +14,14 @@ struct State<'a> {
     errs: Vec<Error<'a>>,
 }
 
-fn space<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
-    take_while0(|c| c.is_ascii_whitespace())
+fn space<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
+    take_while(|c, _| c.is_ascii_whitespace())
 }
 
-fn ident<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
-    let pn = |c: &u8| !c.is_ascii() || c.is_ascii_alphanumeric();
+fn ident<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
+    let pn = |c: &u8, _: &mut S| !c.is_ascii() || c.is_ascii_alphanumeric();
     let p0 = |c: char| !c.is_ascii_digit();
-    take_while0(pn)
+    take_while(pn)
         .filter(move |s| s.chars().next().map(p0).unwrap_or(false))
         .then_ignore(space())
 }
@@ -33,11 +33,11 @@ enum Term<'a> {
     Var(usize),
 }
 
-fn token<S>(x: &str) -> impl Parser<&str, S, O = ()> {
+fn token<S>(x: &str) -> impl Parser<&str, S, O = ()> + Clone {
     matches(x).then_ignore(space())
 }
 
-fn atomic<'a>() -> impl Parser<&'a str, State<'a>, O = Term<'a>> {
+fn atomic<'a>() -> impl Parser<&'a str, State<'a>, O = Term<'a>> + Clone {
     let var = ident().map_with(|v, state: &mut State<'a>| {
         let db = state.vars.iter().rev().position(|b| *b == v);
         Term::Var(db.unwrap_or_else(|| {
@@ -62,11 +62,11 @@ where
 }
 
 fn term<'a>() -> impl Parser<&'a str, State<'a>, O = Term<'a>> {
-    let vars = lazy!(ident).repeated().delimited_by(token("|"), token("|"));
+    let vars = ident().repeated().delimited_by(token("|"), token("|"));
     let abst = vars.and_then(|vars: Vec<_>| {
         with_vars(vars.clone(), lazy!(term)).map(|t| (Term::Abst(vars, Box::new(t))))
     });
-    let args = lazy!(atomic).repeated::<Vec<_>>();
+    let args = atomic().repeated::<Vec<_>>();
     let appl = atomic().then(args).map(|(head, args)| {
         if args.is_empty() {
             head

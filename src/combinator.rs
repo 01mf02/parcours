@@ -166,8 +166,8 @@ pub struct All<T>(T);
 ///
 /// ~~~
 /// use parcours::{Parser, all, str::take_while1};
-/// let digit = || take_while1(|c| c.is_ascii_digit());
-/// let alpha = || take_while1(|c| c.is_ascii_alphabetic());
+/// let digit = || take_while1(|c, _| c.is_ascii_digit());
+/// let alpha = || take_while1(|c, _| c.is_ascii_alphabetic());
 /// let parser = || all((digit(), alpha(), digit()));
 /// let input = "123abc456 rest";
 /// let output = ("123", "abc", "456");
@@ -191,8 +191,8 @@ pub struct Any<T>(T);
 ///
 /// ~~~
 /// use parcours::{Parser, any, str::take_while1};
-/// let digit = || take_while1(|c| c.is_ascii_digit());
-/// let alpha = || take_while1(|c| c.is_ascii_alphabetic());
+/// let digit = || take_while1(|c, _| c.is_ascii_digit());
+/// let alpha = || take_while1(|c, _| c.is_ascii_alphabetic());
 /// let parser = || any((digit(), alpha()));
 /// assert_eq!(parser().parse("123abc", &mut ()), Some(("123", "abc")));
 /// assert_eq!(parser().parse("abc123", &mut ()), Some(("abc", "123")));

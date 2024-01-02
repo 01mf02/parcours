@@ -1,7 +1,7 @@
 //! Pocket Calculator.
 
 use parcours::prec_climb::{self, Associativity};
-use parcours::str::{matches, take_while0, take_while1};
+use parcours::str::{matches, take_while, take_while1};
 use parcours::{any, from_fn, lazy, select, slice, Combinator, Parser};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -83,24 +83,24 @@ impl prec_climb::Expr<Op> for Expr {
     }
 }
 
-fn token<'a>() -> impl Parser<&'a str, O = Token> {
+fn token<'a>() -> impl Parser<&'a str, O = Token> + Clone {
     let match_op = |op: Op| {
         from_fn(move |input: &str, _| Some((Token::Op(op), input.strip_prefix(op.as_char())?)))
     };
     any((
-        take_while1(|c| c.is_ascii_digit()).map(|n| Token::Num(n.parse().unwrap())),
+        take_while1(|c, _| c.is_ascii_digit()).map(|n| Token::Num(n.parse().unwrap())),
         matches("(").map(|_| Token::LPar),
         matches(")").map(|_| Token::RPar),
         any([Op::Add, Op::Sub, Op::Mul, Op::Div, Op::Exp].map(match_op)),
     ))
 }
 
-fn space<'a>() -> impl Parser<&'a str, O = &'a str> {
-    take_while0(|c| c.is_ascii_whitespace())
+fn space<'a>() -> impl Parser<&'a str, O = &'a str> + Clone {
+    take_while(|c, _| c.is_ascii_whitespace())
 }
 
-fn tokens<'a>() -> impl Parser<&'a str, O = Vec<Token>> {
-    space().ignore_then(lazy!(token).then_ignore(lazy!(space)).repeated())
+fn tokens<'a>() -> impl Parser<&'a str, O = Vec<Token>> + Clone {
+    space().ignore_then(token().then_ignore(space()).repeated())
 }
 
 fn atomic<'a>() -> impl Parser<&'a [Token], O = Expr> {
