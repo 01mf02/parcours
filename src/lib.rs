@@ -441,7 +441,7 @@ pub fn lazy<I, S, P: Parser<I, S>, F: FnOnce() -> P>(f: F) -> Lazy<F> {
 
 /// Bla.
 ///
-/// This is returned by [`lazy`].
+/// This is returned by [`lazy()`].
 #[derive(Clone)]
 pub struct Lazy<F>(F);
 
@@ -451,13 +451,6 @@ impl<I, S, P: Parser<I, S>, F: FnOnce() -> P> Parser<I, S> for Lazy<F> {
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
         self.0().parse(input, state)
     }
-}
-
-#[macro_export]
-macro_rules! lazy_move {
-    ($p:expr) => {
-        $crate::from_fn(move |input, state| $p().parse(input, state))
-    };
 }
 
 /// Pattern matching for successful cases.
