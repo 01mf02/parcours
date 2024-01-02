@@ -285,8 +285,28 @@ macro_rules! impl_all_any {
 }
 impl_all_any!(P1; P2 P3 P4 P5 P6 P7 P8 P9);
 
-/// `decide(((l1, r1), ..., (ln, rn), last))` is equivalent to
-/// `l1.and_then(r1).or(...).or(ln.and_then(rn)).or(last)`.
+/// For a tuple `t` of pairs `(l, r)` and a parser `last`,
+/// if there is a first `l` that returns a result `y`, then parse with `r(y)`,
+/// otherwise parse with `last`.
+///
+/// We have the following equivalences:
+/// * `decide(((l1, r1), ..., (ln, rn)), last)` is equivalent to
+///   `decide(((l1, r1)), decide(((l2, r2), ..., (ln, rn)), last))`.
+/// * `decide((), last)` is equivalent to `last`.
+///
+/// `decide(((l, r)), last).parse(input, state)` is defined as:
+///
+/// ~~~
+/// # use parcours::Parser;
+/// # fn f<I: Clone, S, P: Parser<I, S>>(input: I, state: &mut S, l: P, r: impl FnOnce(P::O) -> P, last: P) {
+/// if let Some((y, rest)) = l.parse(input.clone(), state) {
+///     core::mem::drop(input);
+///     r(y).parse(rest, state)
+/// } else {
+///     last.parse(input, state)
+/// }
+/// # ;}
+/// ~~~
 pub fn decide<T, P>(t: T, last: P) -> Decide<T, P> {
     Decide(t, last)
 }
