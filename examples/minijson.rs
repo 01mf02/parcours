@@ -1,4 +1,4 @@
-use parcours::str::{matches, take_while0, take_while1};
+use parcours::str::{matches, take_while0};
 use parcours::{any, lazy, Combinator, Parser};
 
 #[derive(Clone, Debug)]
@@ -20,7 +20,7 @@ fn num<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
     let mut first = true;
     let mut no_dot = true;
     let mut no_exp = true;
-    take_while1(move |c| match c {
+    take_while0(move |c| match c {
         b'0'..=b'9' => {
             first = false;
             true
@@ -30,13 +30,17 @@ fn num<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
         b'e' | b'E' if !first && no_exp => core::mem::replace(&mut no_exp, false),
         _ => false,
     })
+    .filter(|s| match s.bytes().last() {
+        Some(c) => c.is_ascii_digit(),
+        _ => false,
+    })
 }
 
 fn json<'a>() -> impl Parser<&'a str, O = JsonVal<&'a str>> {
-    let str_ = lazy!(|| take_while0(|c| *c != b'"'));
+    let str_ = lazy(|| take_while0(|c| *c != b'"'));
     let str_ = str_.delimited_by(matches("\""), matches("\""));
 
-    let token = |s: &'a str| matches(s).then_ignore(lazy!(space));
+    let token = |s: &'a str| matches(s).then_ignore(lazy(space));
     let arr = lazy!(json).separated_by(token(","));
     let arr = arr.delimited_by(token("["), matches("]"));
     let map = str_.clone().then_ignore(token(":")).then(lazy!(json));
