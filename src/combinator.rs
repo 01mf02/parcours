@@ -253,10 +253,10 @@ macro_rules! impl_any {
 ///
 /// This is inspired by winnow's
 /// [`impl_parser_for_tuples`](https://github.com/winnow-rs/winnow/blob/02561943e396aab9fc268ec00c88273e3315ef0a/src/parser.rs#L943).
-macro_rules! impl_for_tuples {
+macro_rules! impl_all_any {
     ($($acc:ident)+; $head:ident $($tail:ident)*) => {
-        impl_for_tuples!($($acc)+      ;          );
-        impl_for_tuples!($($acc)+ $head; $($tail)*);
+        impl_all_any!($($acc)+      ;          );
+        impl_all_any!($($acc)+ $head; $($tail)*);
     };
     ($($parser:ident)+;) => {
         #[allow(non_snake_case)]
@@ -283,7 +283,7 @@ macro_rules! impl_for_tuples {
         }
     }
 }
-impl_for_tuples!(P1; P2 P3 P4 P5 P6 P7 P8 P9);
+impl_all_any!(P1; P2 P3 P4 P5 P6 P7 P8 P9);
 
 /// `decide(((l1, r1), ..., (ln, rn), last))` is equivalent to
 /// `l1.and_then(r1).or(...).or(ln.and_then(rn)).or(last)`.
@@ -294,10 +294,10 @@ pub fn decide<T>(t: T) -> Decide<T> {
 #[derive(Clone)]
 pub struct Decide<T>(T);
 
-macro_rules! impl_decide_for_tuples {
+macro_rules! impl_decide {
     ($($acc:ident)*; $lp:ident $rp:ident $rf:ident $($tail:ident)*) => {
-        impl_decide_for_tuples!($($acc)*            ;          );
-        impl_decide_for_tuples!($($acc)* $lp $rp $rf; $($tail)*);
+        impl_decide!($($acc)*            ;          );
+        impl_decide!($($acc)* $lp $rp $rf; $($tail)*);
     };
     ($($lp:ident $rp:ident $rf:ident)+;) => {
         #[allow(non_snake_case)]
@@ -318,7 +318,7 @@ macro_rules! impl_decide_for_tuples {
     }
 }
 
-impl_decide_for_tuples!(
+impl_decide!(
     L1 R1 F1;
     L2 R2 F2
     L3 R3 F3
