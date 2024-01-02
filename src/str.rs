@@ -10,12 +10,58 @@ use crate::{from_fn, Combinator, Parser};
 /// because it is supposed to also accept functions that do not implement [`Clone`].
 /// However, we could make this function return a parser that conditionally implements [`Clone`],
 /// by making it return some struct `TakeWhile<F>` that implements [`Clone`] when `F` implements [`Clone`].
-/// However, when I tried this approach, I had the problem that type inference broke down,
+///
+/// ~~~
+/// # use parcours::Parser;
+/// pub fn take_while0<'a, F: FnMut(&u8) -> bool>(f: F) -> TakeWhile<F> {
+///     TakeWhile(f)
+/// }
+///
+/// #[derive(Clone)]
+/// pub struct TakeWhile<F>(F);
+///
+/// impl<'a, S, F: FnMut(&u8) -> bool> Parser<&'a str, S> for TakeWhile<F> {
+///     type O = &'a str;
+///
+///     fn parse(mut self, input: &'a str, _state: &mut S) -> Option<(Self::O, &'a str)> {
+///         let len = input.bytes().take_while(|c| self.0(c)).count();
+///         Some((&input[..len], &input[len..]))
+///     }
+/// }
+/// ~~~
+///
+/// However, when I tried this approach, I had the problem that type inference
+/// frequently broke down when using [`take_while0`],
 /// because `TakeWhile` does not contain any information about `S`.
-/// To fix this, we can put `S` into a [`PhantomData`](core::marker::PhantomData) in `TakeWhile`,
-/// but then, we have to implement [`Clone`] ourselves, because the automatic derivation of
-/// [`Clone`] will impose that `S` has to implement [`Clone`], which is unnecessary.
-/// In summary, it is probably not worth going through all this hassle just to get [`Clone`].
+/// To fix this, we can put `S` into a [`PhantomData`](core::marker::PhantomData) in `TakeWhile`:
+///
+/// ~~~
+/// # use core::marker::PhantomData;
+/// # use parcours::Parser;
+/// pub fn take_while0<'a, S, F: FnMut(&u8) -> bool>(f: F) -> TakeWhile<S, F> {
+///     TakeWhile(PhantomData::default(), f)
+/// }
+///
+/// #[derive(Clone)]
+/// pub struct TakeWhile<S, F>(PhantomData<S>, F);
+///
+/// impl<'a, S, F: FnMut(&u8) -> bool> Parser<&'a str, S> for TakeWhile<S, F> {
+///     type O = &'a str;
+///
+///     fn parse(mut self, input: &'a str, _state: &mut S) -> Option<(Self::O, &'a str)> {
+///         let len = input.bytes().take_while(|c| self.1(c)).count();
+///         Some((&input[..len], &input[len..]))
+///     }
+/// }
+/// ~~~
+///
+/// However, here we have the problem that the automatic derivation of
+/// [`Clone`] imposes that `S` has to implement [`Clone`], which is unnecessary.
+/// So we would have to implement [`Clone`] ourselves.
+/// At this point, I consider it not worth going through all this hassle just to get [`Clone`].
+///
+/// If you have a better idea how to make [`take_while0`] implement [`Clone`]
+/// whenever its input function implements [`Clone`], I would be curious to hear about it!
 pub fn take_while0<'a, S>(mut f: impl FnMut(&u8) -> bool) -> impl Parser<&'a str, S, O = &'a str> {
     from_fn(move |input: &'a str, _state: &mut S| {
         let len = input.bytes().take_while(|c| f(c)).count();
