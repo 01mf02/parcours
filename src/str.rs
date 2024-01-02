@@ -14,7 +14,7 @@ pub fn take_while1<'a, S>(f: impl FnMut(&u8) -> bool) -> impl Parser<&'a str, S,
 }
 
 pub fn matches<'a, 'i: 'a, S>(x: &'a str) -> impl Parser<&'i str, S, O = ()> + Clone + 'a {
-    from_fn(move |input: &'i str, _state: &mut S| input.strip_prefix(x).map(|rest| ((), rest)))
+    from_fn(move |input: &str, _| Some(((), input.strip_prefix(x)?)))
 }
 
 /// Subtract one string slice from another.
@@ -25,7 +25,7 @@ pub fn matches<'a, 'i: 'a, S>(x: &'a str) -> impl Parser<&'i str, S, O = ()> + C
 ///        large
 /// -------------------
 ///             small
-///        ---------------
+///        ------------===
 /// \-----/
 ///    | what we want
 /// ~~~
@@ -36,10 +36,13 @@ pub fn matches<'a, 'i: 'a, S>(x: &'a str) -> impl Parser<&'i str, S, O = ()> + C
 ///           large
 ///    -------------------
 ///      small
-/// ---------------
+/// ===------------
 ///                \-----/
 ///                   | what we want
 /// ~~~
+///
+/// Here, the parts indicated by `===` are anomalies that are not expected to occur,
+/// but which are supported nonetheless by this function.
 ///
 fn minus<'a>(large: &'a str, small: &'a str) -> Option<&'a str> {
     let small_start = small.as_ptr() as usize;
