@@ -284,6 +284,52 @@ macro_rules! impl_for_tuples {
 }
 impl_for_tuples!(P1; P2 P3 P4 P5 P6 P7 P8 P9);
 
+/// `decide(((l1, r1), ..., (ln, rn), last))` is equivalent to
+/// `l1.and_then(r1).or(...).or(ln.and_then(rn)).or(last)`.
+pub fn decide<T>(t: T) -> Decide<T> {
+    Decide(t)
+}
+
+#[derive(Clone)]
+pub struct Decide<T>(T);
+
+macro_rules! impl_decide_for_tuples {
+    ($($acc:ident)*; $lp:ident $rp:ident $rf:ident $($tail:ident)*) => {
+        impl_decide_for_tuples!($($acc)*            ;          );
+        impl_decide_for_tuples!($($acc)* $lp $rp $rf; $($tail)*);
+    };
+    ($($lp:ident $rp:ident $rf:ident)+;) => {
+        #[allow(non_snake_case)]
+        impl<I: Clone, S, $($lp: Parser<I, S>, $rp: Parser<I, S, O = Last::O>, $rf: FnOnce($lp::O) -> $rp),+, Last: Parser<I, S>> Parser<I, S> for Decide<($(($lp, $rf)),+, Last)> {
+            type O = Last::O;
+
+            #[inline(always)]
+            fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
+                let Self(($(($lp, $rf)),+, last)) = self;
+                $(
+                if let Some((y, rest)) = $lp.parse(input.clone(), state) {
+                    core::mem::drop(input);
+                    return $rf(y).parse(rest, state)
+                })*
+                return last.parse(input, state)
+            }
+        }
+    }
+}
+
+impl_decide_for_tuples!(
+    L1 R1 F1;
+    L2 R2 F2
+    L3 R3 F3
+    L4 R4 F4
+    L5 R5 F5
+    L6 R6 F6
+    L7 R7 F7
+    L8 R8 F8
+    L9 R9 F9
+);
+
+
 #[derive(Clone)]
 pub struct Map<P, F>(P, F);
 
