@@ -36,9 +36,22 @@ fn num<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
     })
 }
 
+fn str<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
+    let mut escaped = false;
+    take_while0(move |c| match c {
+        b'\\' if !escaped => {
+            escaped = true;
+            true
+        }
+        b'\\' | b'"' if escaped => core::mem::replace(&mut escaped, false),
+        b'"' => false,
+        _ => true,
+    })
+}
+
+
 fn json<'a>() -> impl Parser<&'a str, O = JsonVal<&'a str>> {
-    let str_ = lazy(|| take_while0(|c| *c != b'"'));
-    let str_ = str_.delimited_by(matches("\""), matches("\""));
+    let str_ = lazy(str).delimited_by(matches("\""), matches("\""));
 
     let token = |s: &'a str| matches(s).then_ignore(lazy(space));
     let arr = lazy!(json).separated_by(token(","));
