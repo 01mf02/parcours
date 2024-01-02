@@ -364,11 +364,11 @@ impl<I: Clone, S, P: Parser<I, S>> Parser<I, S> for Opt<P> {
 /// the sequence of numbers starting from 1:
 ///
 /// ~~~
-/// # use parcours::{Parser, from_fn_input, repeat};
+/// # use parcours::{Parser, from_fn, repeat};
 /// let mut i = 0;
 /// let p = repeat(|| {
 ///     i += 1;
-///     from_fn_input(move |input: &str| input.strip_prefix(&i.to_string()))
+///     from_fn(move |input: &str, _| Some(((), input.strip_prefix(&i.to_string())?)))
 /// });
 /// assert_eq!(p.parse("12345", &mut ()), Some(((), "")));
 /// ~~~

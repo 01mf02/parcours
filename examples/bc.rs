@@ -2,7 +2,7 @@
 
 use parcours::prec_climb::{self, Associativity};
 use parcours::str::{matches, take_while0, take_while1};
-use parcours::{any, from_fn_input, lazy, select, slice, Combinator, Parser};
+use parcours::{any, from_fn, lazy, select, slice, Combinator, Parser};
 
 #[derive(Debug, PartialEq, Eq)]
 enum Token {
@@ -84,14 +84,14 @@ impl prec_climb::Expr<Op> for Expr {
 }
 
 fn token<'a>() -> impl Parser<&'a str, O = Token> {
-    let ops = [Op::Add, Op::Sub, Op::Mul, Op::Div, Op::Exp];
-    let match_op = |op: Op| from_fn_input(move |input: &str| input.strip_prefix(op.as_char()));
-    let ops = ops.map(|op| match_op(op).map(move |_| Token::Op(op)));
+    let match_op = |op: Op| {
+        from_fn(move |input: &str, _| Some((Token::Op(op), input.strip_prefix(op.as_char())?)))
+    };
     any((
         take_while1(|c| c.is_ascii_digit()).map(|n| Token::Num(n.parse().unwrap())),
         matches("(").map(|_| Token::LPar),
         matches(")").map(|_| Token::RPar),
-        any(ops),
+        any([Op::Add, Op::Sub, Op::Mul, Op::Div, Op::Exp].map(match_op)),
     ))
 }
 
