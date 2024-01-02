@@ -2,7 +2,7 @@
 
 use parcours::prec_climb::{self, Associativity};
 use parcours::str::{matches, take_while0, take_while1};
-use parcours::{any, from_fn_input, lazy, lazy_move, select, slice, Combinator, Parser};
+use parcours::{any, from_fn_input, lazy, select, slice, Combinator, Parser};
 
 #[derive(Debug, PartialEq, Eq)]
 enum Token {
@@ -116,7 +116,7 @@ fn atomic<'a>() -> impl Parser<&'a [Token], O = Expr> {
 fn expr<'a>() -> impl Parser<&'a [Token], O = Expr> {
     let op = || slice::first_filter_map(select!(Token::Op(op) => *op));
     atomic()
-        .then(lazy_move!(op).then(lazy!(atomic)).repeated::<Vec<_>>())
+        .then(lazy(op).then(lazy!(atomic)).repeated::<Vec<_>>())
         .map(|(head, tail)| prec_climb::climb(head, tail))
 }
 

@@ -438,6 +438,25 @@ macro_rules! lazy {
     };
 }
 
+/// Lazily construct a parser from a function.
+pub fn lazy<I, S, P: Parser<I, S>, F: FnOnce() -> P>(f: F) -> Lazy<F> {
+    Lazy(f)
+}
+
+/// Bla.
+///
+/// This is returned by [`lazy`].
+#[derive(Clone)]
+pub struct Lazy<F>(F);
+
+impl<I, S, P: Parser<I, S>, F: FnOnce() -> P> Parser<I, S> for Lazy<F> {
+    type O = P::O;
+
+    fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
+        self.0().parse(input, state)
+    }
+}
+
 #[macro_export]
 macro_rules! lazy_move {
     ($p:expr) => {
