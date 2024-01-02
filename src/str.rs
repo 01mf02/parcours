@@ -2,6 +2,20 @@
 
 use crate::{from_fn, Combinator, Parser};
 
+/// Collect longest prefix of a [`&str`] whose bytes satisfies the given condition.
+///
+/// # Implementation notes
+///
+/// The parser returned by this function does not implement [`Clone`],
+/// because it is supposed to also accept functions that do not implement [`Clone`].
+/// However, we could make this function return a parser that conditionally implements [`Clone`],
+/// by making it return some struct `TakeWhile<F>` that implements [`Clone`] when `F` implements [`Clone`].
+/// However, when I tried this approach, I had the problem that type inference broke down,
+/// because `TakeWhile` does not contain any information about `S`.
+/// To fix this, we can put `S` into a [`PhantomData`](core::marker::PhantomData) in `TakeWhile`,
+/// but then, we have to implement [`Clone`] ourselves, because the automatic derivation of
+/// [`Clone`] will impose that `S` has to implement [`Clone`], which is unnecessary.
+/// In summary, it is probably not worth going through all this hassle just to get [`Clone`].
 pub fn take_while0<'a, S>(mut f: impl FnMut(&u8) -> bool) -> impl Parser<&'a str, S, O = &'a str> {
     from_fn(move |input: &'a str, _state: &mut S| {
         let len = input.bytes().take_while(|c| f(c)).count();
