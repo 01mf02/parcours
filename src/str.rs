@@ -1,6 +1,5 @@
 //! Parsers for [`&str`] input.
 
-use crate::combinator::Filter;
 use crate::{from_fn, Combinator, Parser};
 
 /// Collect longest prefix of a [`&str`] whose bytes satisfies the given condition.
@@ -20,7 +19,7 @@ impl<'a, S, F: FnMut(&u8, &mut S) -> bool> Parser<&'a str, S> for TakeWhile<F> {
     }
 }
 
-type TakeWhile1<F> = Filter<TakeWhile<F>, fn(&&str) -> bool>;
+type TakeWhile1<F> = crate::combinator::Filter<TakeWhile<F>, fn(&&str) -> bool>;
 
 pub fn take_while1<'a, S, F: FnMut(&u8, &mut S) -> bool>(f: F) -> TakeWhile1<F> {
     take_while(f).filter(|n| !n.is_empty())

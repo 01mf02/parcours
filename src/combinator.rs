@@ -329,7 +329,6 @@ impl_decide_for_tuples!(
     L9 R9 F9
 );
 
-
 #[derive(Clone)]
 pub struct Map<P, F>(P, F);
 
