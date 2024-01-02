@@ -206,13 +206,14 @@ impl<I: Clone, S, O, P: Parser<I, S, O = O>, const N: usize> Parser<I, S> for An
     type O = O;
 
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
-        // TODO: Avoid clone() for last parser!
-        for p in self.0 {
+        let mut iter = self.0.into_iter().rev();
+        let last = iter.next()?;
+        for p in iter.rev() {
             if let Some((y, rest)) = p.parse(input.clone(), state) {
                 return Some((y, rest));
             }
         }
-        None
+        last.parse(input, state)
     }
 }
 
