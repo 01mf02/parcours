@@ -287,26 +287,33 @@ impl_all_any!(P1; P2 P3 P4 P5 P6 P7 P8 P9);
 
 /// `decide(((l1, r1), ..., (ln, rn), last))` is equivalent to
 /// `l1.and_then(r1).or(...).or(ln.and_then(rn)).or(last)`.
-pub fn decide<T>(t: T) -> Decide<T> {
-    Decide(t)
+pub fn decide<T, P>(t: T, last: P) -> Decide<T, P> {
+    Decide(t, last)
 }
 
 #[derive(Clone)]
-pub struct Decide<T>(T);
+pub struct Decide<T, Last>(T, Last);
 
 macro_rules! impl_decide {
     ($($acc:ident)*; $lp:ident $rp:ident $rf:ident $($tail:ident)*) => {
         impl_decide!($($acc)*            ;          );
         impl_decide!($($acc)* $lp $rp $rf; $($tail)*);
     };
-    ($($lp:ident $rp:ident $rf:ident)+;) => {
+    ($($lp:ident $rp:ident $rf:ident)*;) => {
         #[allow(non_snake_case)]
-        impl<I: Clone, S, $($lp: Parser<I, S>, $rp: Parser<I, S, O = Last::O>, $rf: FnOnce($lp::O) -> $rp),+, Last: Parser<I, S>> Parser<I, S> for Decide<($(($lp, $rf)),+, Last)> {
+        impl<I: Clone, S, $($lp, $rp, $rf),*, Last: Parser<I, S>> Parser<I, S> for Decide<($(($lp, $rf)),*,), Last>
+        where
+        $(
+            $lp: Parser<I, S>,
+            $rp: Parser<I, S, O = Last::O>,
+            $rf: FnOnce($lp::O) -> $rp
+        ),*,
+        {
             type O = Last::O;
 
             #[inline(always)]
             fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
-                let Self(($(($lp, $rf)),+, last)) = self;
+                let Self(($(($lp, $rf)),*,), last) = self;
                 $(
                 if let Some((y, rest)) = $lp.parse(input.clone(), state) {
                     core::mem::drop(input);
