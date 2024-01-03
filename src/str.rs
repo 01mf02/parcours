@@ -81,11 +81,17 @@ pub fn offset<'a>(large: &'a str, small: &'a str) -> Option<usize> {
     }
 }
 
-pub fn with_str<'a, S, P: Parser<&'a str, S>>(
-    p: P,
-) -> impl Parser<&'a str, S, O = (P::O, &'a str)> {
-    from_fn(|input, state| {
-        let (y, rest) = p.parse(input, state)?;
+pub fn with_str<'a, S, P: Parser<&'a str, S>>(p: P) -> WithStr<P> {
+    WithStr(p)
+}
+
+pub struct WithStr<P>(P);
+
+impl<'a, S, P: Parser<&'a str, S>> Parser<&'a str, S> for WithStr<P> {
+    type O = (P::O, &'a str);
+
+    fn parse(self, input: &'a str, state: &mut S) -> Option<(Self::O, &'a str)> {
+        let (y, rest) = self.0.parse(input, state)?;
         Some(((y, minus(input, rest)?), rest))
-    })
+    }
 }
