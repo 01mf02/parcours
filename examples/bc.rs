@@ -104,10 +104,10 @@ fn tokens<'a>() -> impl Parser<&'a str, O = Vec<Token>> + Clone {
 }
 
 fn atomic<'a>() -> impl Parser<&'a [Token], O = Expr> {
-    let eq = |tk| slice::first_filter(move |t| *t == tk);
+    let eq = |tk| slice::first_filter(move |t, _| *t == tk);
     let par = lazy!(expr).delimited_by(eq(Token::LPar), eq(Token::RPar));
     let num = slice::first_filter_map(select!(Token::Num(n) => Expr::Num(*n)));
-    let neg = lazy!(|| slice::first_filter(|t| *t == Token::Op(Op::Sub)));
+    let neg = lazy!(|| slice::first_filter(|t, _| *t == Token::Op(Op::Sub)));
     let negs = neg.repeated::<Vec<_>>();
     negs.then(par.or(num))
         .map(|(negs, atom)| negs.iter().fold(atom, |acc, _x| Expr::Neg(Box::new(acc))))

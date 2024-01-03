@@ -463,7 +463,7 @@ impl<I, S, P: Parser<I, S>, F: FnOnce() -> P> Parser<I, S> for Lazy<F> {
 ///
 /// ~~~
 /// # use parcours::{Parser, slice};
-/// let p = || slice::first_filter_map(|x| match x {
+/// let p = || slice::first_filter_map(|first, _state| match first {
 ///     0 => Some(false),
 ///     1 => Some(true),
 ///     _ => None,
@@ -491,7 +491,7 @@ impl<I, S, P: Parser<I, S>, F: FnOnce() -> P> Parser<I, S> for Lazy<F> {
 /// This is inspired by [chumsky's `select!` macro](https://github.com/zesterer/chumsky/blob/40fe7d1966f375b3c676d01e04c5dca08f7615ac/src/lib.rs#L1486).
 #[macro_export]
 macro_rules! select {
-    ($($p:pat $(if $guard:expr)? => $out:expr),+ $(,)?) => (|x| match x {
+    ($($p:pat $(if $guard:expr)? => $out:expr),+ $(,)?) => (|x, _| match x {
         $($p $(if $guard)? => ::core::option::Option::Some($out)),+,
         _ => ::core::option::Option::None,
     });
