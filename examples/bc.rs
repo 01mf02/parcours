@@ -1,5 +1,6 @@
 //! Pocket Calculator.
 
+use core::convert::TryInto;
 use parcours::prec_climb::{self, Associativity};
 use parcours::str::{matches, take_while, take_while1};
 use parcours::{any, from_fn, lazy, select, slice, Combinator, Parser};
