@@ -79,7 +79,10 @@ where
     /// `any((p0, p1,/*..., */pn))`.
     /// However, if more than two parsers are combined,
     /// [`any`] might yield better performance.
-    fn or<P: Parser<I, S>>(self, other: P) -> Any<(Self, P)> {
+    fn or<P: Parser<I, S>>(self, other: P) -> Any<(Self, P)>
+    where
+        I: Clone,
+    {
         Any((self, other))
     }
 
@@ -117,6 +120,7 @@ where
 
     fn repeated<O>(self) -> Repeated<Self, fn() -> O>
     where
+        I: Clone,
         Self: Clone,
         O: Default + Extend<Self::O>,
     {
@@ -135,6 +139,7 @@ where
     /// you may use `a.then(b.then(a).repeated())` instead.
     fn separated_by<Sep, O>(self, sep: Sep) -> SeparatedBy<Self, Sep, fn() -> O>
     where
+        I: Clone,
         Self: Clone,
         Sep: Parser<I, S> + Clone,
         O: Default + Extend<Self::O>,
@@ -142,7 +147,10 @@ where
         SeparatedBy(self, sep, O::default)
     }
 
-    fn opt(self) -> Opt<Self> {
+    fn opt(self) -> Opt<Self>
+    where
+        I: Clone,
+    {
         Opt(self)
     }
 
