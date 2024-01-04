@@ -1,4 +1,4 @@
-![Build status](https://github.com/01mf02/parcours/workflows/Rust/badge.svg)
+![Build status](https://github.com/01mf02/parcours/actions/workflows/rust.yml/badge.svg)
 [![Crates.io](https://img.shields.io/crates/v/parcours.svg)](https://crates.io/crates/parcours)
 [![Documentation](https://docs.rs/parcours/badge.svg)](https://docs.rs/parcours)
 [![Rust 1.53+](https://img.shields.io/badge/rust-1.53+-orange.svg)](https://www.rust-lang.org)
