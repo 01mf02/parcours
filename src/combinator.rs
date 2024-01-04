@@ -91,10 +91,12 @@ where
         Map(self, f)
     }
 
+    /// Apply a function to the output of the parser as well as the mutable state.
     fn map_with<O, F: FnOnce(Self::O, &mut S) -> O>(self, f: F) -> MapWith<Self, F> {
         MapWith(self, f)
     }
 
+    /// Succeed only if the given function yields `true` for the parser output.
     fn filter<F: FnOnce(&Self::O) -> bool>(self, f: F) -> Filter<Self, F> {
         Filter(self, f)
     }
@@ -103,10 +105,12 @@ where
         FilterMap(self, f)
     }
 
+    /// Run two parsers in sequence and discard result of second one.
     fn then_ignore<P: Parser<I, S>>(self, other: P) -> ThenMap<Self, P, Self::O, P::O, Self::O> {
         self.then(other).map(|(l, _r): (Self::O, P::O)| l)
     }
 
+    /// Run two parsers in sequence and discard result of first one.
     fn ignore_then<P: Parser<I, S>>(self, other: P) -> ThenMap<Self, P, Self::O, P::O, P::O> {
         self.then(other).map(|(_l, r): (Self::O, P::O)| r)
     }
