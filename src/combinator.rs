@@ -214,7 +214,7 @@ impl<I: Clone, S, O, P: Parser<I, S, O = O>, const N: usize> Parser<I, S> for An
     type O = O;
 
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
-        let mut iter = self.0.into_iter().rev();
+        let mut iter = IntoIterator::into_iter(self.0).rev();
         let last = iter.next()?;
         for p in iter.rev() {
             if let Some((y, rest)) = p.parse(input.clone(), state) {
@@ -372,9 +372,8 @@ impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O) -> O> Parser<I, S> for Map<P, F> 
     type O = O;
 
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
-        self.0
-            .parse(input, state)
-            .map(|(y, rest)| (self.1(y), rest))
+        let (p, f) = (self.0, self.1);
+        p.parse(input, state).map(|(y, rest)| (f(y), rest))
     }
 }
 
@@ -385,9 +384,8 @@ impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O, &mut S) -> O> Parser<I, S> for Ma
     type O = O;
 
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
-        self.0
-            .parse(input, state)
-            .map(|(y, rest)| (self.1(y, state), rest))
+        let (p, f) = (self.0, self.1);
+        p.parse(input, state).map(|(y, rest)| (f(y, state), rest))
     }
 }
 
@@ -398,7 +396,8 @@ impl<I, S, P: Parser<I, S>, F: FnOnce(&P::O) -> bool> Parser<I, S> for Filter<P,
     type O = P::O;
 
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
-        self.0.parse(input, state).filter(|(y, _rest)| self.1(y))
+        let (p, f) = (self.0, self.1);
+        p.parse(input, state).filter(|(y, _rest)| f(y))
     }
 }
 
@@ -409,9 +408,9 @@ impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O) -> Option<O>> Parser<I, S> for Fi
     type O = O;
 
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
-        self.0
-            .parse(input, state)
-            .and_then(|(y, rest)| Some((self.1(y)?, rest)))
+        let (p, f) = (self.0, self.1);
+        p.parse(input, state)
+            .and_then(|(y, rest)| Some((f(y)?, rest)))
     }
 }
 
@@ -487,7 +486,8 @@ impl<I: Clone, S, P: Parser<I, S> + Clone, O: Extend<P::O>, OF: FnOnce() -> O> P
     type O = O;
 
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
-        Repeat(|| self.0.clone(), self.1).parse(input, state)
+        let (p, o) = (self.0, self.1);
+        Repeat(|| p.clone(), o).parse(input, state)
     }
 }
 
@@ -557,7 +557,8 @@ where
     type O = O;
 
     fn parse(self, input: I, state: &mut S) -> Option<(Self::O, I)> {
-        SeparateBy(|| self.0.clone(), || self.1.clone(), self.2).parse(input, state)
+        let (p, sep, o) = (self.0, self.1, self.2);
+        SeparateBy(|| p.clone(), || sep.clone(), o).parse(input, state)
     }
 }
 
