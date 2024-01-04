@@ -86,6 +86,7 @@ where
         Any((self, other))
     }
 
+    /// Apply a function to the output of the parser.
     fn map<O, F: FnOnce(Self::O) -> O>(self, f: F) -> Map<Self, F> {
         Map(self, f)
     }
