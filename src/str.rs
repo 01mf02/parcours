@@ -2,11 +2,12 @@
 
 use crate::{from_fn, Combinator, Parser};
 
-/// Collect longest prefix of a [`&str`] whose bytes satisfies the given condition.
+/// Collect longest prefix of a [`&str`] whose bytes satisfy the given condition.
 pub fn take_while<S, F: FnMut(&u8, &mut S) -> bool>(f: F) -> TakeWhile<F> {
     TakeWhile(f)
 }
 
+/// A parser returned by [`take_while`].
 #[derive(Clone)]
 pub struct TakeWhile<F>(F);
 
@@ -21,10 +22,14 @@ impl<'a, S, F: FnMut(&u8, &mut S) -> bool> Parser<&'a str, S> for TakeWhile<F> {
 
 type TakeWhile1<F> = crate::combinator::Filter<TakeWhile<F>, fn(&&str) -> bool>;
 
+/// Collect longest *non-empty* prefix of a [`&str`] whose bytes satisfy the given condition.
+///
+/// If the prefix is empty, this returns no output, unlike [`take_while`].
 pub fn take_while1<S, F: FnMut(&u8, &mut S) -> bool>(f: F) -> TakeWhile1<F> {
     take_while(f).filter(|n| !n.is_empty())
 }
 
+/// If the input starts with the given string, return `()` and remove the string from the input.
 pub fn matches<'a, 'i: 'a, S>(x: &'a str) -> impl Parser<&'i str, S, O = ()> + Clone + 'a {
     from_fn(move |input: &str, _| Some(((), input.strip_prefix(x)?)))
 }
@@ -71,20 +76,36 @@ fn minus<'a>(large: &'a str, small: &'a str) -> Option<&'a str> {
     }
 }
 
-pub fn offset<'a>(large: &'a str, small: &'a str) -> Option<usize> {
-    let large_ptr = large.as_ptr() as usize;
-    let small_ptr = small.as_ptr() as usize;
-    if small_ptr < large_ptr || small_ptr > large_ptr.wrapping_add(large.len()) {
+/// If the beginning of `inner` lies inside `outer`, return its offset.
+///
+/// Example:
+///
+/// ~~~
+/// let outer = "Hello world!";
+/// assert_eq!(parcours::str::offset(outer, &outer[6..]), Some(6));
+/// // here, `inner` exceeds `outer`, but it's okay, because
+/// // the start of `inner` still lies within `outer`
+/// assert_eq!(parcours::str::offset(&outer[..7], &outer[6..]), Some(6));
+/// assert_eq!(parcours::str::offset(outer, "something else"), None);
+/// ~~~
+pub fn offset<'a>(outer: &'a str, inner: &'a str) -> Option<usize> {
+    let outer_ptr = outer.as_ptr() as usize;
+    let inner_ptr = inner.as_ptr() as usize;
+    if inner_ptr < outer_ptr || inner_ptr > outer_ptr.wrapping_add(outer.len()) {
         None
     } else {
-        Some(small_ptr.wrapping_sub(large_ptr))
+        Some(inner_ptr.wrapping_sub(outer_ptr))
     }
 }
 
+/// Run the given parser and combine its output with the slice of the input string it consumed.
+///
+/// You can use this to find out via [`offset`] the span of the parsed element.
 pub fn with_str<'a, S, P: Parser<&'a str, S>>(p: P) -> WithStr<P> {
     WithStr(p)
 }
 
+/// A parser returned by [`with_str`].
 pub struct WithStr<P>(P);
 
 impl<'a, S, P: Parser<&'a str, S>> Parser<&'a str, S> for WithStr<P> {
