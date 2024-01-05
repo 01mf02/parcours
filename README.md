@@ -19,3 +19,18 @@ but these building blocks are very generic and incur very small overhead,
 so you can do nearly everything with them.
 
 [Parkour]: https://en.wikipedia.org/wiki/Parkour
+
+## Related Work
+
+I discovered the [lip] crate only once I was already on a good way into writing parcours.
+It is spiritually the closest to parcours in the Rust ecosystem that I found so far.
+Apart from it, there are many parser combinator crates.
+I have personally implemented quite complex parsers using [nom] and [chumsky],
+which both provide nice machinery for common use cases, but
+I always struggled once I wanted to do something that was not intended by these crates.
+In contrast, parcours provides much less machinery,
+and it is my hope that this makes it also more flexible.
+
+[lip]: https://crates.io/crates/lip
+[nom]: https://crates.io/crates/nom
+[chumsky]: https://crates.io/crates/chumsky
