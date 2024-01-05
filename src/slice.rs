@@ -2,10 +2,12 @@
 
 use crate::Parser;
 
+/// If the first element of the input satisfies the given condition, return it and advance input.
 pub fn first_filter<T, S, F: FnOnce(&T, &mut S) -> bool>(f: F) -> FirstFilter<F> {
     FirstFilter(f)
 }
 
+/// A parser returned by [`first_filter`].
 pub struct FirstFilter<F>(F);
 
 impl<'a, T, S, F: FnOnce(&T, &mut S) -> bool> Parser<&'a [T], S> for FirstFilter<F> {
@@ -18,10 +20,12 @@ impl<'a, T, S, F: FnOnce(&T, &mut S) -> bool> Parser<&'a [T], S> for FirstFilter
     }
 }
 
+/// If the given function returns `Some(y)` for the first element of the input, return `y` and advance input.
 pub fn first_filter_map<T, U, S, F: FnOnce(&T, &mut S) -> U>(f: F) -> FirstFilterMap<F> {
     FirstFilterMap(f)
 }
 
+/// A parser returned by [`first_filter_map`].
 pub struct FirstFilterMap<F>(F);
 
 impl<'a, T, U, S, F: FnOnce(&T, &mut S) -> Option<U>> Parser<&'a [T], S> for FirstFilterMap<F> {
