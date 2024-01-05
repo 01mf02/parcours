@@ -20,6 +20,15 @@ so you can do nearly everything with them.
 
 [Parkour]: https://en.wikipedia.org/wiki/Parkour
 
+## Features
+
+* `no_std` and no dependency on `alloc` → suitable for constrained (embedded) environments
+* no other dependencies
+* fast build times: ~600ms for a JSON parser with `--release`
+* high performance
+* works on any kind of input (helpers for `&str` and `&[T]` are provided)
+* precedence climbing
+
 ## Related Work
 
 I discovered the [lip] crate only once I was already on a good way into writing parcours.
