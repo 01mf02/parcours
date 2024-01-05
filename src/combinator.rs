@@ -101,6 +101,7 @@ where
         Filter(self, f)
     }
 
+    /// If the given function yields `Some(y)` for the parser output, succeed with `y`, else fail.
     fn filter_map<O, F: FnOnce(Self::O) -> Option<O>>(self, f: F) -> FilterMap<Self, F> {
         FilterMap(self, f)
     }
@@ -115,14 +116,19 @@ where
         self.then(other).map(|(_l, r): (Self::O, P::O)| r)
     }
 
-    fn delimited_by<L: Parser<I, S>, R: Parser<I, S>>(
-        self,
-        l: L,
-        r: R,
-    ) -> DelimitedBy<L, Self, R, L::O, Self::O, R::O> {
+    /// Run parsers `l`, `self`, and `r` in sequence and return only the output of `self`.
+    fn delimited_by<L, R>(self, l: L, r: R) -> DelimitedBy<L, Self, R, L::O, Self::O, R::O>
+    where
+        L: Parser<I, S>,
+        R: Parser<I, S>,
+    {
         all((l, self, r)).map(|(_l, m, _r)| m)
     }
 
+    /// Apply the given parser as often as possible.
+    ///
+    /// This collect the outputs of the parser into the type `O`.
+    /// If you do not want to allocate, you can use `()` as `O`.
     fn repeated<O>(self) -> Repeated<Self, fn() -> O>
     where
         I: Clone,
@@ -152,6 +158,9 @@ where
         SeparatedBy(self, sep, O::default)
     }
 
+    /// If the given parser succeeds, wrap its output in `Some`, else return `None`.
+    ///
+    /// The resulting parser always succeeds.
     fn opt(self) -> Opt<Self>
     where
         I: Clone,
@@ -159,6 +168,7 @@ where
         Opt(self)
     }
 
+    /// Run the first parser, then create a second parser from its output and run it.
     fn and_then<P: Parser<I, S>, F: FnOnce(Self::O) -> P>(self, f: F) -> AndThen<Self, F> {
         AndThen(self, f)
     }
@@ -166,9 +176,7 @@ where
 
 impl<I, S, T: Parser<I, S>> Combinator<I, S> for T {}
 
-/// A parser that returns all outputs of its contained parsers.
-///
-/// This is returned by [`all`].
+/// A parser returned by [`all`].
 #[derive(Clone)]
 pub struct All<T>(T);
 
@@ -191,9 +199,7 @@ pub fn all<T>(t: T) -> All<T> {
     All(t)
 }
 
-/// A parser that returns the output of the first contained parser that succeeds.
-///
-/// This is returned by [`any`].
+/// A parser returned by [`any`].
 #[derive(Clone)]
 pub struct Any<T>(T);
 
@@ -324,6 +330,7 @@ pub fn decide<T, P>(t: T, last: P) -> Decide<T, P> {
     Decide(t, last)
 }
 
+/// A parser returned by [`decide`].
 #[derive(Clone)]
 pub struct Decide<T, Last>(T, Last);
 
@@ -370,6 +377,7 @@ impl_decide!(
     L9 R9 F9
 );
 
+/// A parser returned by [`Combinator::map`].
 #[derive(Clone)]
 pub struct Map<P, F>(P, F);
 
@@ -382,6 +390,7 @@ impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O) -> O> Parser<I, S> for Map<P, F> 
     }
 }
 
+/// A parser returned by [`Combinator::map_with`].
 #[derive(Clone)]
 pub struct MapWith<P, F>(P, F);
 
@@ -394,6 +403,7 @@ impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O, &mut S) -> O> Parser<I, S> for Ma
     }
 }
 
+/// A parser returned by [`Combinator::filter`].
 #[derive(Clone)]
 pub struct Filter<P, F>(P, F);
 
@@ -406,6 +416,7 @@ impl<I, S, P: Parser<I, S>, F: FnOnce(&P::O) -> bool> Parser<I, S> for Filter<P,
     }
 }
 
+/// A parser returned by [`Combinator::filter_map`].
 #[derive(Clone)]
 pub struct FilterMap<P, F>(P, F);
 
@@ -422,6 +433,7 @@ impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O) -> Option<O>> Parser<I, S> for Fi
 type ThenMap<P1, P2, O1, O2, O> = Map<All<(P1, P2)>, fn((O1, O2)) -> O>;
 type DelimitedBy<L, M, R, LO, MO, RO> = Map<All<(L, M, R)>, fn((LO, MO, RO)) -> MO>;
 
+/// A parser returned by [`Combinator::opt`].
 #[derive(Clone)]
 pub struct Opt<P>(P);
 
@@ -464,6 +476,7 @@ where
     Repeat(p, || O::default())
 }
 
+/// A parser returned by [`repeat`].
 #[derive(Clone)]
 pub struct Repeat<P, O>(P, O);
 
@@ -482,6 +495,7 @@ impl<I: Clone, S, P: Parser<I, S>, O: Extend<P::O>, PF: FnMut() -> P, OF: FnOnce
     }
 }
 
+/// A parser returned by [`Combinator::repeated`].
 #[derive(Clone)]
 pub struct Repeated<P, O>(P, O);
 
@@ -516,6 +530,7 @@ where
     SeparateBy(p, sep, || O::default())
 }
 
+/// A parser returned by [`separate_by`].
 #[derive(Clone)]
 pub struct SeparateBy<P, Sep, O>(P, Sep, O);
 
@@ -550,6 +565,7 @@ where
     }
 }
 
+/// A parser returned by [`Combinator::separated_by`].
 #[derive(Clone)]
 pub struct SeparatedBy<P, Sep, O>(P, Sep, O);
 
@@ -567,6 +583,7 @@ where
     }
 }
 
+/// A parser returned by [`Combinator::and_then`].
 #[derive(Clone)]
 pub struct AndThen<P, F>(P, F);
 

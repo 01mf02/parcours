@@ -1,6 +1,7 @@
 //! Parser Combinators for Unique Results.
 #![no_std]
 #![forbid(unsafe_code)]
+#![warn(missing_docs)]
 
 pub mod combinator;
 pub mod prec_climb;
@@ -148,6 +149,7 @@ pub use combinator::{all, any, repeat, separate_by, Combinator};
 /// All this means that once there was the decision for [`Parser::parse`] to return [`Option`],
 /// there was a clear incentive to take `self` in [`Parser::parse`] in order to allow for [`FnOnce`].
 pub trait Parser<I, S = ()> {
+    /// Output of the parser.
     type O;
 
     /// Parse a value of type [`Self::O`].
@@ -190,9 +192,7 @@ pub fn from_fn<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>>(f: F) -> FromFn<
     FromFn(f)
 }
 
-/// A parser that returns the output of the function `F` called with given input and state.
-///
-/// This is returned by [`from_fn`].
+/// A parser returned by [`from_fn`].
 #[derive(Clone)]
 pub struct FromFn<F>(F);
 
@@ -438,13 +438,22 @@ macro_rules! lazy {
 }
 
 /// Lazily construct a parser from a function.
+///
+/// This can be useful to make a parser that implements [`Clone`] from
+/// a function that returns a parser which does *not* implement [`Clone`].
+///
+/// This function complements the [`lazy!`] macro, as
+/// it can be applied in places where [`lazy!`] does not work.
+/// In particular, when the compiler suggests that we use `move` when using [`lazy!`]
+/// (which seems to happen when we give it a closure), consider this function.
+///
+/// However, unlike [`lazy!`], this function is not suitable for type erasure,
+/// so it cannot be used to construct recursive parsers.
 pub fn lazy<I, S, P: Parser<I, S>, F: FnOnce() -> P>(f: F) -> Lazy<F> {
     Lazy(f)
 }
 
-/// Bla.
-///
-/// This is returned by [`lazy()`].
+/// A parser returned by [`lazy()`].
 #[derive(Clone)]
 pub struct Lazy<F>(F);
 
