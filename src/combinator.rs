@@ -180,7 +180,7 @@ impl<I, S, T: Parser<I, S>> Combinator<I, S> for T {}
 #[derive(Clone)]
 pub struct All<T>(T);
 
-/// If all provided parsers succeed, return all of their outputs.
+/// Return outputs of all provided parsers, if all succeed.
 ///
 /// This function takes a tuple of parsers,
 /// which may all return different types of outputs.
@@ -448,7 +448,7 @@ impl<I: Clone, S, P: Parser<I, S>> Parser<I, S> for Opt<P> {
     }
 }
 
-/// Apply a parser as often as possible.
+/// Apply a parser `p()` as often as possible.
 ///
 /// This is a more general version of [`Combinator::repeated`],
 /// which takes a single parser that must implement [`Clone`],
