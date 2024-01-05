@@ -8,6 +8,7 @@ pub fn first_filter<T, S, F: FnOnce(&T, &mut S) -> bool>(f: F) -> FirstFilter<F>
 }
 
 /// A parser returned by [`first_filter`].
+#[derive(Clone)]
 pub struct FirstFilter<F>(F);
 
 impl<'a, T, S, F: FnOnce(&T, &mut S) -> bool> Parser<&'a [T], S> for FirstFilter<F> {
@@ -26,6 +27,7 @@ pub fn first_filter_map<T, U, S, F: FnOnce(&T, &mut S) -> U>(f: F) -> FirstFilte
 }
 
 /// A parser returned by [`first_filter_map`].
+#[derive(Clone)]
 pub struct FirstFilterMap<F>(F);
 
 impl<'a, T, U, S, F: FnOnce(&T, &mut S) -> Option<U>> Parser<&'a [T], S> for FirstFilterMap<F> {

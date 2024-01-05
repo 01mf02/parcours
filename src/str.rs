@@ -106,6 +106,7 @@ pub fn with_str<'a, S, P: Parser<&'a str, S>>(p: P) -> WithStr<P> {
 }
 
 /// A parser returned by [`with_str`].
+#[derive(Clone)]
 pub struct WithStr<P>(P);
 
 impl<'a, S, P: Parser<&'a str, S>> Parser<&'a str, S> for WithStr<P> {
