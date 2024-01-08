@@ -1,4 +1,36 @@
 //! Parser Combinators for Unique Results.
+//!
+//! This crate provides building blocks to create parsers (and lexers) that return at most one output.
+//!
+//! # Quickstart
+//!
+//! The following shows a CSV line parser realised in parcours:
+//!
+//! ~~~
+//! use parcours::{Parser, Combinator};
+//!
+//! // CSV line parser               👇 input 👇 state
+//! fn csv_line<'a>() -> impl Parser<&'a str, (), O = Vec<&'a str>> {
+//!     use parcours::str::{matches, take_while};
+//!     take_while(|c, _| *c != b',').separated_by(matches(","))
+//! }
+//!
+//! assert_eq!(
+//!     //               👇 input                👇 state
+//!     csv_line().parse("apples,oranges,pears", &mut ()),
+//!     //    👇 output                           👇 remaining input
+//!     Some((vec!["apples", "oranges", "pears"], ""))
+//! );
+//! ~~~
+//!
+//! # Examples
+//!
+//! parcours provides a few examples that are each designed to teach a few concepts:
+//!
+//! * [JSON](../../../examples/json.rs): zero-copy string parsing, combinators
+//! * [Lambda calculus](../../../examples/lambda.rs): error handling & mutable state
+//! * [bc](../../../examples/bc.rs): separate lexer/parser, precedence climbing
+//!
 #![no_std]
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
