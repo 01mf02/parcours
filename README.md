@@ -24,6 +24,7 @@ so you can do nearly everything with them.
 
 * `no_std` and no dependency on `alloc` → suitable for constrained (embedded) environments
 * no other dependencies
+* zero-copy parsing
 * fast build times: ~600ms for a JSON parser with `--release`
 * high performance
 * works on any kind of input (helpers for `&str` and `&[T]` are provided)
