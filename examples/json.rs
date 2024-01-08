@@ -16,7 +16,7 @@ fn space<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
     take_while(|c, _| c.is_ascii_whitespace())
 }
 
-fn num<'a, S>() -> impl Parser<&'a str, S, O = &'a str> {
+fn num<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
     let mut first = true;
     let mut no_dot = true;
     let mut no_exp = true;
