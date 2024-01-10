@@ -31,6 +31,33 @@
 //! * [Lambda calculus](../../../examples/lambda.rs): error handling & mutable state
 //! * [bc](../../../examples/bc.rs): separate lexer/parser, precedence climbing
 //!
+//! # Topics
+//!
+//! ## Error Recovery
+//!
+//! My opinion on error recovery has been shaped by the lecture of
+//! [Don't Panic! Better, Fewer, Syntax Errors for LR Parsers](https://arxiv.org/pdf/1804.07133.pdf)
+//! by Lukas Diekmann and Laurence Tratt, who write in their introduction:
+//!
+//! > When error recovery works well, it is a useful productivity gain.
+//! > Unfortunately, most current error recovery approaches are simplistic.
+//! > The most common grammar-neutral approach to error recovery are those algorithms described as
+//! > "panic mode" [...] which skip input until the parser finds something it is able to parse.
+//! > A more grammar-speciﬁc variation of this idea is to skip input until a
+//! > pre-determined synchronisation token (e.g. ';' in Java) is reached [...],
+//! > or to try inserting a single synchronisation token.
+//! > Such strategies are often unsuccessful, leading to a cascade of spurious syntax errors [...].
+//! > Programmers quickly learn that only the location of the first error in a file --- not
+//! > the reported repair, nor the location of subsequent errors --- can be relied upon to be accurate.
+//!
+//! Their proposed solution is for LR parsers, which parcours cannot adapt.
+//! Therefore, instead of adopting a "simplistic" error recovery approach,
+//! I leave all control about error recovery to the user of the parcours.
+//! While parcours can be used to emit multiple error messages due to its mutable state,
+//! I have found it most useful to emit only the first syntax error message, as
+//! I find myself only looking at the first syntax error anyway (as observed in the citation).
+//! If you want support for multiple parse errors that are automatically derived and good,
+//! you may consider using the [grmtools](https://github.com/softdevteam/grmtools) suite of the authors.
 #![no_std]
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
