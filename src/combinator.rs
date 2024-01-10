@@ -172,9 +172,9 @@ where
     ///
     /// ~~~
     /// use parcours::{Parser, Combinator, str::take_while1};
-    /// let digit = || take_while1(|c, _| c.is_ascii_digit());
-    /// let alpha = || take_while1(|c, _| c.is_ascii_alphabetic());
-    /// let both = digit().opt().chain(alpha().opt()).map(|i| i.collect());
+    /// let digit = take_while1(|c, _| c.is_ascii_digit());
+    /// let alpha = take_while1(|c, _| c.is_ascii_alphabetic());
+    /// let both = digit.opt().chain(alpha.opt()).map(|i| i.collect());
     /// assert_eq!(both.parse("123abc", &mut ()), Some((vec!["123", "abc"], "")))
     /// ~~~
     fn chain<P>(self, other: P) -> ThenMap<Self, P, Self::O, P::O, Chain<Self::O, P::O>>
