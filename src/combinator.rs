@@ -168,11 +168,31 @@ where
         Opt(self)
     }
 
+    /// Convert the outputs of the given parsers to iterators and concatenate them.
+    ///
+    /// ~~~
+    /// use parcours::{Parser, Combinator, str::take_while1};
+    /// let digit = || take_while1(|c, _| c.is_ascii_digit());
+    /// let alpha = || take_while1(|c, _| c.is_ascii_alphabetic());
+    /// let both = digit().opt().chain(alpha().opt()).map(|i| i.collect());
+    /// assert_eq!(both.parse("123abc", &mut ()), Some((vec!["123", "abc"], "")))
+    /// ~~~
+    fn chain<P>(self, other: P) -> ThenMap<Self, P, Self::O, P::O, Chain<Self::O, P::O>>
+    where
+        P: Parser<I, S>,
+        Self::O: IntoIterator,
+        P::O: IntoIterator<Item = <Self::O as IntoIterator>::Item>,
+    {
+        self.then(other).map(|(l, r)| l.into_iter().chain(r))
+    }
+
     /// Run the first parser, then create a second parser from its output and run it.
     fn and_then<P: Parser<I, S>, F: FnOnce(Self::O) -> P>(self, f: F) -> AndThen<Self, F> {
         AndThen(self, f)
     }
 }
+
+type Chain<L, R> = core::iter::Chain<<L as IntoIterator>::IntoIter, <R as IntoIterator>::IntoIter>;
 
 impl<I, S, T: Parser<I, S>> Combinator<I, S> for T {}
 
