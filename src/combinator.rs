@@ -107,12 +107,12 @@ where
     }
 
     /// Run two parsers in sequence and discard result of second one.
-    fn then_ignore<P: Parser<I, S>>(self, other: P) -> ThenMap<Self, P, Self::O, P::O, Self::O> {
+    fn then_ignore<P: Parser<I, S>>(self, other: P) -> ThenMap<I, S, Self, P, Self::O> {
         self.then(other).map(|(l, _r): (Self::O, P::O)| l)
     }
 
     /// Run two parsers in sequence and discard result of first one.
-    fn ignore_then<P: Parser<I, S>>(self, other: P) -> ThenMap<Self, P, Self::O, P::O, P::O> {
+    fn ignore_then<P: Parser<I, S>>(self, other: P) -> ThenMap<I, S, Self, P, P::O> {
         self.then(other).map(|(_l, r): (Self::O, P::O)| r)
     }
 
@@ -177,7 +177,7 @@ where
     /// let both = digit.opt().chain(alpha.opt()).map(|i| i.collect());
     /// assert_eq!(both.parse("123abc", &mut ()), Some((vec!["123", "abc"], "")))
     /// ~~~
-    fn chain<P>(self, other: P) -> ThenMap<Self, P, Self::O, P::O, Chain<Self::O, P::O>>
+    fn chain<P>(self, other: P) -> ThenMap<I, S, Self, P, Chain<Self::O, P::O>>
     where
         P: Parser<I, S>,
         Self::O: IntoIterator,
@@ -450,7 +450,8 @@ impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O) -> Option<O>> Parser<I, S> for Fi
     }
 }
 
-type ThenMap<P1, P2, O1, O2, O> = Map<All<(P1, P2)>, fn((O1, O2)) -> O>;
+type ThenMap<I, S, P1, P2, O> =
+    Map<All<(P1, P2)>, fn((<P1 as Parser<I, S>>::O, <P2 as Parser<I, S>>::O)) -> O>;
 type DelimitedBy<L, M, R, LO, MO, RO> = Map<All<(L, M, R)>, fn((LO, MO, RO)) -> MO>;
 
 /// A parser returned by [`Combinator::opt`].
