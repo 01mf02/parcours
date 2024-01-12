@@ -101,15 +101,15 @@ pub fn offset<'a>(outer: &'a str, inner: &'a str) -> Option<usize> {
 /// Run the given parser and combine its output with the slice of the input string it consumed.
 ///
 /// You can use this to find out via [`offset`] the span of the parsed element.
-pub fn with_str<'a, S, P: Parser<&'a str, S>>(p: P) -> WithStr<P> {
-    WithStr(p)
+pub fn with_consumed<'a, S, P: Parser<&'a str, S>>(p: P) -> WithConsumed<P> {
+    WithConsumed(p)
 }
 
-/// A parser returned by [`with_str`].
+/// A parser returned by [`with_consumed`].
 #[derive(Clone)]
-pub struct WithStr<P>(P);
+pub struct WithConsumed<P>(P);
 
-impl<'a, S, P: Parser<&'a str, S>> Parser<&'a str, S> for WithStr<P> {
+impl<'a, S, P: Parser<&'a str, S>> Parser<&'a str, S> for WithConsumed<P> {
     type O = (P::O, &'a str);
 
     fn parse(self, input: &'a str, state: &mut S) -> Option<(Self::O, &'a str)> {
