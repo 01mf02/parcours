@@ -101,6 +101,22 @@ pub fn offset<'a>(outer: &'a str, inner: &'a str) -> Option<usize> {
 /// Run the given parser and combine its output with the slice of the input string it consumed.
 ///
 /// You can use this to find out via [`offset`] the span of the parsed element.
+///
+/// Example:
+///
+/// ~~~
+/// # use parcours::str::{take_while, with_consumed};
+/// # use parcours::{Parser, Combinator};
+/// let digits = take_while(|c, _| c.is_ascii_digit());
+/// let alphas = take_while(|c, _| c.is_ascii_alphabetic());
+/// let parser = with_consumed(digits.then(alphas));
+/// let input = "123abcäöü";
+/// let result = ("123", "abc");
+/// let consumed = "123abc";
+/// let rest = "äöü";
+/// assert_eq!(parser.parse(input, &mut ()), Some(((result, consumed), rest)));
+///
+/// ~~~
 pub fn with_consumed<'a, S, P: Parser<&'a str, S>>(p: P) -> WithConsumed<P> {
     WithConsumed(p)
 }
