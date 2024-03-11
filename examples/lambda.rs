@@ -130,6 +130,11 @@ fn atomic<'a>() -> impl Parser<&'a str, State<'a>, O = Term<'a>> + Clone {
 }
 
 /// Extend the state with variables, parse with `p`, then remove the variables again.
+///
+/// This is used to make sure that all variables are bound.
+/// Alternatively, we could also simply delay the bounds check to after parsing,
+/// but the way we do it, we can report unbound variables even if
+/// the whole lambda expression fails to parse, for example in `|x| y ()`.
 fn with_vars<'a, I, P>(vars: Vec<&'a str>, p: P) -> impl Parser<I, State<'a>, O = P::O>
 where
     P: Parser<I, State<'a>>,
