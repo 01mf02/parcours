@@ -1,4 +1,14 @@
 //! A JSON value parser.
+//!
+//! You can test it by running
+//!
+//!     cargo run --example json -- foo.json
+//!
+//! to let it parse some file `foo.json`, or
+//!
+//!     cargo run --example json --
+//!
+//! to let it parse from standard input (terminate with CTRL-D or similar).
 use parcours::str::{matches, take_while};
 use parcours::{any, lazy, Combinator, Parser};
 
