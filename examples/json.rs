@@ -1,5 +1,10 @@
 //! A JSON value parser.
 //!
+//! The point of this example is to
+//! demonstrate parcours's parser combinators as well as to
+//! show how to implement zero-copy parsers; that is,
+//! parsers that yield data referring to the parser input.
+//!
 //! You can test it by running
 //!
 //!     cargo run --example json -- foo.json
@@ -13,6 +18,11 @@ use parcours::str::{matches, take_while};
 use parcours::{any, lazy, Combinator, Parser};
 
 /// A JSON value generic over the type of strings `S`.
+///
+/// The parser that we are going to implement will yield `JsonVal<&str>`,
+/// where strings in the JSON value point to parts of the input string.
+/// This is called zero-copy parsing, in contrast to yielding
+/// `JsonVal<String>`, for example.
 #[derive(Clone, Debug)]
 enum JsonVal<S> {
     Arr(Vec<Self>),
