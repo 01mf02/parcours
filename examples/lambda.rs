@@ -172,7 +172,7 @@ fn handle(input: &str) {
 
 fn main() -> std::io::Result<()> {
     //let input = r#"(|ä y| (ä y) X0) x  "#;
-    std::io::stdin().lines().try_for_each(|line| {
-        Ok(handle(&line?))
-    })
+    std::io::stdin()
+        .lines()
+        .try_for_each(|line| Ok(handle(&line?)))
 }
