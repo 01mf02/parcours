@@ -1,14 +1,22 @@
 //! A lambda expression parser.
 //!
 //! This example showcases the Art of the State; that is,
-//! how to use parcours's mutable state to:
+//! how to use parcours's mutable state.
+//! In this example, we will use mutable state to:
 //! * store currently bound variables,
 //! * record multiple recoverable errors,
 //! * report a single non-recoverable error.
 //!
-//! You can try the following examples:
+//! You can run this example using:
+//!
+//!     cargo run --example lambda
+//!
+//! This opens an interactive prompt, in which
+//! you can try the following examples:
 //! * `|x y| x`
 //! * `|x y| y x`
+//! * `|x y| x (x y)`
+//! * `(|x| x) (|x| x)`
 //! * `|x y  x` <-- fails because `|` is not terminated
 //! * `|x| |y| x`
 //! * `|x| x y z` <-- fails because `y` and `z` are not bound
@@ -91,6 +99,8 @@ fn token<S>(x: &str) -> impl Parser<&str, S, O = ()> + Clone {
 /// Here, we use `from_fn` to implement some custom parsing logic
 /// that we cannot express with the normal parser combinators in parcours,
 /// in particular because we access and modify the state here.
+/// Alternatively, we could also implement the `Parser` trait manually,
+/// but this is more verbose than `from_fn`.
 ///
 /// We only store an error if no other error was stored before.
 /// This is to prevent cascading errors which might be more confusing than helpful.
