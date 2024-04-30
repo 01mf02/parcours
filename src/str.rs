@@ -2,8 +2,31 @@
 
 use crate::{from_fn, Combinator, Parser};
 
+/// If the input is not empty, return its first character and advance input.
+pub fn next<S>() -> Next<S> {
+    Next(core::marker::PhantomData)
+}
+
+/// A parser returned by [`next`].
+pub struct Next<S>(core::marker::PhantomData<S>);
+
+impl<S> Clone for Next<S> {
+    fn clone(&self) -> Self {
+        Next(core::marker::PhantomData)
+    }
+}
+
+impl<'a, S> Parser<&'a str, S> for Next<S> {
+    type O = char;
+
+    fn parse(self, input: &'a str, _state: &mut S) -> Option<(Self::O, &'a str)> {
+        let mut chars = input.chars();
+        chars.next().map(|c| (c, chars.as_str()))
+    }
+}
+
 /// Collect longest prefix of a [`&str`] whose bytes satisfy the given condition.
-pub fn take_while<S, F: FnMut(&u8, &mut S) -> bool>(f: F) -> TakeWhile<F> {
+pub fn take_while<S, F: FnMut(&char, &mut S) -> bool>(f: F) -> TakeWhile<F> {
     TakeWhile(f)
 }
 
@@ -11,11 +34,14 @@ pub fn take_while<S, F: FnMut(&u8, &mut S) -> bool>(f: F) -> TakeWhile<F> {
 #[derive(Clone)]
 pub struct TakeWhile<F>(F);
 
-impl<'a, S, F: FnMut(&u8, &mut S) -> bool> Parser<&'a str, S> for TakeWhile<F> {
+impl<'a, S, F: FnMut(&char, &mut S) -> bool> Parser<&'a str, S> for TakeWhile<F> {
     type O = &'a str;
 
     fn parse(mut self, input: &'a str, state: &mut S) -> Option<(Self::O, &'a str)> {
-        let len = input.bytes().take_while(|c| self.0(c, state)).count();
+        let len = input
+            .char_indices()
+            .find(|(_, c)| !self.0(c, state))
+            .map_or_else(|| input.len(), |(len, _)| len);
         Some((&input[..len], &input[len..]))
     }
 }
@@ -25,7 +51,7 @@ type TakeWhile1<F> = crate::combinator::Filter<TakeWhile<F>, fn(&&str) -> bool>;
 /// Collect longest *non-empty* prefix of a [`&str`] whose bytes satisfy the given condition.
 ///
 /// If the prefix is empty, this returns no output, unlike [`take_while`].
-pub fn take_while1<S, F: FnMut(&u8, &mut S) -> bool>(f: F) -> TakeWhile1<F> {
+pub fn take_while1<S, F: FnMut(&char, &mut S) -> bool>(f: F) -> TakeWhile1<F> {
     take_while(f).filter(|n| !n.is_empty())
 }
 

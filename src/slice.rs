@@ -2,41 +2,25 @@
 
 use crate::Parser;
 
-/// If the first element of the input satisfies the given condition, return it and advance input.
-pub fn first_filter<T, S, F: FnOnce(&T, &mut S) -> bool>(f: F) -> FirstFilter<F> {
-    FirstFilter(f)
+/// If the input is not empty, return its first element and advance input.
+pub fn next<T, S>() -> Next<T, S> {
+    Next(core::marker::PhantomData)
 }
 
-/// A parser returned by [`first_filter`].
-#[derive(Clone)]
-pub struct FirstFilter<F>(F);
+/// A parser returned by [`next`].
+pub struct Next<T, S>(core::marker::PhantomData<(T, S)>);
 
-impl<'a, T, S, F: FnOnce(&T, &mut S) -> bool> Parser<&'a [T], S> for FirstFilter<F> {
-    type O = &'a T;
-
-    fn parse(self, input: &'a [T], state: &mut S) -> Option<(Self::O, &'a [T])> {
-        input
-            .split_first()
-            .filter(|(first, _rest)| self.0(first, state))
+impl<T, S> Clone for Next<T, S> {
+    fn clone(&self) -> Self {
+        Next(core::marker::PhantomData)
     }
 }
 
-/// If the given function returns `Some(y)` for the first element of the input, return `y` and advance input.
-pub fn first_filter_map<T, U, S, F: FnOnce(&T, &mut S) -> U>(f: F) -> FirstFilterMap<F> {
-    FirstFilterMap(f)
-}
+impl<'a, T, S> Parser<&'a [T], S> for Next<T, S> {
+    type O = &'a T;
 
-/// A parser returned by [`first_filter_map`].
-#[derive(Clone)]
-pub struct FirstFilterMap<F>(F);
-
-impl<'a, T, U, S, F: FnOnce(&T, &mut S) -> Option<U>> Parser<&'a [T], S> for FirstFilterMap<F> {
-    type O = U;
-
-    fn parse(self, input: &'a [T], state: &mut S) -> Option<(Self::O, &'a [T])> {
-        input
-            .split_first()
-            .and_then(|(first, rest)| Some((self.0(first, state)?, rest)))
+    fn parse(self, input: &'a [T], _state: &mut S) -> Option<(Self::O, &'a [T])> {
+        input.split_first()
     }
 }
 

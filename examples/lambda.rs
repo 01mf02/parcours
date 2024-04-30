@@ -30,10 +30,11 @@
 //! Many parsers in this example that do not access the state
 //! are generic over any state `S`, whereas those which access the state
 //! use `State`.
-use parcours::str::{matches, take_while};
+use parcours::str::{self, matches, take_while};
 use parcours::{from_fn, lazy, Combinator, Parser};
 
 /// A lambda expression.
+#[allow(dead_code)]
 #[derive(Debug)]
 enum Term<'a> {
     /// Abstraction
@@ -82,10 +83,10 @@ fn space<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
 /// either not in ASCII (such as 'ä') or that are alphanumeric ASCII.
 /// Furthermore, the first character of an identifier must not be a digit.
 fn ident<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
-    let pn = |c: &u8, _: &mut S| !c.is_ascii() || c.is_ascii_alphanumeric();
-    let p0 = |c: char| !c.is_ascii_digit();
-    take_while(pn)
-        .filter(move |s| s.chars().next().map(p0).unwrap_or(false))
+    let pn = |c: &char, _: &mut S| !c.is_ascii() || c.is_ascii_alphanumeric();
+    let p0 = |c: &char| !c.is_ascii() || c.is_ascii_alphabetic();
+    str::with_consumed(str::next().filter(p0).then(take_while(pn)))
+        .map(|(_, s)| s)
         .then_ignore(space())
 }
 

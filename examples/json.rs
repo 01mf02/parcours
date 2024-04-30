@@ -23,6 +23,7 @@ use parcours::{any, lazy, Combinator, Parser};
 /// where strings in the JSON value point to parts of the input string.
 /// This is called zero-copy parsing, in contrast to yielding
 /// `JsonVal<String>`, for example.
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 enum JsonVal<S> {
     Arr(Vec<Self>),
@@ -51,17 +52,18 @@ fn num<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
     // have we encountered no exponent character ('e' or 'E') so far?
     let mut no_exp = true;
     take_while(move |c, _| match c {
-        b'0'..=b'9' => {
+        '0'..='9' => {
             first = false;
             true
         }
-        b'-' if first => core::mem::replace(&mut first, false),
-        b'.' if !first && no_dot && no_exp => core::mem::replace(&mut no_dot, false),
-        b'e' | b'E' if !first && no_exp => core::mem::replace(&mut no_exp, false),
+        // TODO: handle negative exponent!
+        '-' if first => core::mem::replace(&mut first, false),
+        '.' if !first && no_dot && no_exp => core::mem::replace(&mut no_dot, false),
+        'e' | 'E' if !first && no_exp => core::mem::replace(&mut no_exp, false),
         _ => false,
     })
     // the last character of a number must always be a digit
-    .filter(|s| match s.bytes().last() {
+    .filter(|s| match s.chars().last() {
         Some(c) => c.is_ascii_digit(),
         _ => false,
     })
@@ -80,11 +82,11 @@ fn str<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
     // was the previous character an escaping backslash ('\')?
     let mut escaped = false;
     take_while(move |c, _| match c {
-        b'\\' if !escaped => {
+        '\\' if !escaped => {
             escaped = true;
             true
         }
-        b'"' if !escaped => false,
+        '"' if !escaped => false,
         // anything preceded by an escaped backslash is ignored
         _ if escaped => core::mem::replace(&mut escaped, false),
         _ => true,

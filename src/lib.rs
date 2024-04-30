@@ -12,7 +12,7 @@
 //! // CSV line parser               👇 input 👇 state
 //! fn csv_line<'a>() -> impl Parser<&'a str, (), O = Vec<&'a str>> {
 //!     use parcours::str::{matches, take_while};
-//!     take_while(|c, _| *c != b',').separated_by(matches(","))
+//!     take_while(|c, _| *c != ',').separated_by(matches(","))
 //! }
 //!
 //! assert_eq!(
@@ -530,8 +530,8 @@ impl<I, S, P: Parser<I, S>, F: FnOnce() -> P> Parser<I, S> for Lazy<F> {
 /// we frequently end up with patterns like this:
 ///
 /// ~~~
-/// # use parcours::{Parser, slice};
-/// let p = || slice::first_filter_map(|first, _state| match first {
+/// # use parcours::{Parser, Combinator, slice};
+/// let p = || slice::next().filter_map(|first| match first {
 ///     0 => Some(false),
 ///     1 => Some(true),
 ///     _ => None,
@@ -545,8 +545,8 @@ impl<I, S, P: Parser<I, S>, F: FnOnce() -> P> Parser<I, S> for Lazy<F> {
 /// Because this is such a common case, `select!` allows us to write it like that:
 ///
 /// ~~~
-/// # use parcours::{Parser, select, slice};
-/// let p = || slice::first_filter_map(select!(
+/// # use parcours::{Parser, Combinator, select, slice};
+/// let p = || slice::next().filter_map(select!(
 ///     0 => false,
 ///     1 => true,
 /// ));
@@ -559,7 +559,7 @@ impl<I, S, P: Parser<I, S>, F: FnOnce() -> P> Parser<I, S> for Lazy<F> {
 /// This is inspired by [chumsky's `select!` macro](https://github.com/zesterer/chumsky/blob/40fe7d1966f375b3c676d01e04c5dca08f7615ac/src/lib.rs#L1486).
 #[macro_export]
 macro_rules! select {
-    ($($p:pat $(if $guard:expr)? => $out:expr),+ $(,)?) => (|x, _| match x {
+    ($($p:pat $(if $guard:expr)? => $out:expr),+ $(,)?) => (|x| match x {
         $($p $(if $guard)? => ::core::option::Option::Some($out)),+,
         _ => ::core::option::Option::None,
     });

@@ -144,12 +144,12 @@ impl Expr {
 /// `parcours::str`   functions.
 fn atomic<'a>() -> impl Parser<&'a [Token], O = Expr> {
     // succeed if the first element in the slice is the token `tk`
-    let eq = |tk| slice::first_filter(move |t, _| *t == tk);
+    let eq = |tk| slice::next().filter(move |t| **t == tk);
     // parentheses
     let par = lazy!(expr).delimited_by(eq(Token::LPar), eq(Token::RPar));
     // if the first token is a number, return a number expression, else fail
-    let num = slice::first_filter_map(select!(Token::Num(n) => Expr::Num(*n)));
-    let neg = slice::first_filter(|t, _| *t == Token::Op(Op::Sub));
+    let num = slice::next().filter_map(select!(Token::Num(n) => Expr::Num(*n)));
+    let neg = slice::next().filter(|t| **t == Token::Op(Op::Sub));
     let negs = neg.repeated::<Vec<_>>();
     negs.then(par.or(num))
         .map(|(negs, atom)| negs.iter().fold(atom, |acc, _x| Expr::Neg(Box::new(acc))))
@@ -162,7 +162,7 @@ fn atomic<'a>() -> impl Parser<&'a [Token], O = Expr> {
 ///
 /// This uses precedence climbing to respect operator precedences.
 fn expr<'a>() -> impl Parser<&'a [Token], O = Expr> {
-    let op = slice::first_filter_map(select!(Token::Op(op) => *op));
+    let op = slice::next().filter_map(select!(Token::Op(op) => *op));
     atomic()
         .then(op.then(lazy!(atomic)).repeated::<Vec<_>>())
         // for precedence climbing to work, we have to implement
