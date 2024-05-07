@@ -3,20 +3,11 @@
 use crate::Parser;
 
 /// If the input is not empty, return its first element and advance input.
-pub fn next<T, S>() -> Next<T, S> {
-    Next(core::marker::PhantomData)
+pub fn next<'a, T, S>() -> crate::Next<&'a [T], S> {
+    crate::Next(core::marker::PhantomData)
 }
 
-/// A parser returned by [`next`].
-pub struct Next<T, S>(core::marker::PhantomData<(T, S)>);
-
-impl<T, S> Clone for Next<T, S> {
-    fn clone(&self) -> Self {
-        Next(core::marker::PhantomData)
-    }
-}
-
-impl<'a, T, S> Parser<&'a [T], S> for Next<T, S> {
+impl<'a, T, S> Parser<&'a [T], S> for crate::Next<&'a [T], S> {
     type O = &'a T;
 
     fn parse(self, input: &'a [T], _state: &mut S) -> Option<(Self::O, &'a [T])> {
@@ -43,15 +34,11 @@ fn minus<'a, T>(large: &'a [T], small: &'a [T]) -> Option<&'a [T]> {
 }
 
 /// Run the given parser and combine its output with the slice of the input it consumed.
-pub fn with_consumed<'a, T: 'a, S, P: Parser<&'a [T], S>>(p: P) -> WithConsumed<P> {
-    WithConsumed(p)
+pub fn with_consumed<I, S, P: Parser<I, S>>(p: P) -> crate::WithConsumed<P> {
+    crate::WithConsumed(p)
 }
 
-/// A parser returned by [`with_consumed`].
-#[derive(Clone)]
-pub struct WithConsumed<P>(P);
-
-impl<'a, T, S, P: Parser<&'a [T], S>> Parser<&'a [T], S> for WithConsumed<P> {
+impl<'a, T, S, P: Parser<&'a [T], S>> Parser<&'a [T], S> for crate::WithConsumed<P> {
     type O = (P::O, &'a [T]);
 
     fn parse(self, input: &'a [T], state: &mut S) -> Option<(Self::O, &'a [T])> {

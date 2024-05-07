@@ -259,7 +259,7 @@ pub fn from_fn<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>>(f: F) -> FromFn<
 }
 
 /// A parser returned by [`from_fn`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct FromFn<F>(F);
 
 impl<I, S, O, F: FnOnce(I, &mut S) -> Option<(O, I)>> Parser<I, S> for FromFn<F> {
@@ -520,7 +520,7 @@ pub fn lazy<I, S, P: Parser<I, S>, F: FnOnce() -> P>(f: F) -> Lazy<F> {
 }
 
 /// A parser returned by [`lazy()`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Lazy<F>(F);
 
 impl<I, S, P: Parser<I, S>, F: FnOnce() -> P> Parser<I, S> for Lazy<F> {
@@ -530,6 +530,33 @@ impl<I, S, P: Parser<I, S>, F: FnOnce() -> P> Parser<I, S> for Lazy<F> {
         self.0().parse(input, state)
     }
 }
+
+/// If the input is not empty, return its first element and advance input.
+pub fn next<T, S>() -> Next<T, S> {
+    Next(core::marker::PhantomData)
+}
+
+/// A parser returned by [`next`].
+pub struct Next<T, S>(core::marker::PhantomData<(T, S)>);
+
+impl<T, S> Copy for Next<T, S> {}
+
+impl<T, S> Clone for Next<T, S> {
+    fn clone(&self) -> Self {
+        Next(core::marker::PhantomData)
+    }
+}
+
+/// Run the given parser and combine its output with the input it consumed.
+///
+/// This is implemented for input types `&str` and `&[T]`.
+pub fn with_consumed<I, S, P: Parser<I, S>>(p: P) -> WithConsumed<P> {
+    WithConsumed(p)
+}
+
+/// A parser returned by [`with_consumed`].
+#[derive(Copy, Clone)]
+pub struct WithConsumed<P>(pub(crate) P);
 
 /// Pattern matching for successful cases.
 ///

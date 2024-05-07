@@ -3,20 +3,11 @@
 use crate::{from_fn, Combinator, Parser};
 
 /// If the input is not empty, return its first character and advance input.
-pub fn next<S>() -> Next<S> {
-    Next(core::marker::PhantomData)
+pub fn next<'a, S>() -> crate::Next<&'a str, S> {
+    crate::Next(core::marker::PhantomData)
 }
 
-/// A parser returned by [`next`].
-pub struct Next<S>(core::marker::PhantomData<S>);
-
-impl<S> Clone for Next<S> {
-    fn clone(&self) -> Self {
-        Next(core::marker::PhantomData)
-    }
-}
-
-impl<'a, S> Parser<&'a str, S> for Next<S> {
+impl<'a, S> Parser<&'a str, S> for crate::Next<&'a str, S> {
     type O = char;
 
     fn parse(self, input: &'a str, _state: &mut S) -> Option<(Self::O, &'a str)> {
@@ -31,7 +22,7 @@ pub fn take_while<S, F: FnMut(&char, &mut S) -> bool>(f: F) -> TakeWhile<F> {
 }
 
 /// A parser returned by [`take_while`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct TakeWhile<F>(F);
 
 impl<'a, S, F: FnMut(&char, &mut S) -> bool> Parser<&'a str, S> for TakeWhile<F> {
@@ -143,15 +134,11 @@ pub fn offset<'a>(outer: &'a str, inner: &'a str) -> Option<usize> {
 /// assert_eq!(parser.parse(input, &mut ()), Some(((result, consumed), rest)));
 ///
 /// ~~~
-pub fn with_consumed<'a, S, P: Parser<&'a str, S>>(p: P) -> WithConsumed<P> {
-    WithConsumed(p)
+pub fn with_consumed<'a, S, P: Parser<&'a str, S>>(p: P) -> crate::WithConsumed<P> {
+    crate::WithConsumed(p)
 }
 
-/// A parser returned by [`with_consumed`].
-#[derive(Clone)]
-pub struct WithConsumed<P>(P);
-
-impl<'a, S, P: Parser<&'a str, S>> Parser<&'a str, S> for WithConsumed<P> {
+impl<'a, S, P: Parser<&'a str, S>> Parser<&'a str, S> for crate::WithConsumed<P> {
     type O = (P::O, &'a str);
 
     fn parse(self, input: &'a str, state: &mut S) -> Option<(Self::O, &'a str)> {

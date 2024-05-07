@@ -197,7 +197,7 @@ type Chain<L, R> = core::iter::Chain<<L as IntoIterator>::IntoIter, <R as IntoIt
 impl<I, S, T: Parser<I, S>> Combinator<I, S> for T {}
 
 /// A parser returned by [`all`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct All<T>(T);
 
 /// Return outputs of all provided parsers, if all succeed.
@@ -220,7 +220,7 @@ pub fn all<T>(t: T) -> All<T> {
 }
 
 /// A parser returned by [`any`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Any<T>(T);
 
 /// Return output of the first provided parser that succeeds.
@@ -351,7 +351,7 @@ pub fn decide<T, P>(t: T, last: P) -> Decide<T, P> {
 }
 
 /// A parser returned by [`decide`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Decide<T, Last>(T, Last);
 
 macro_rules! impl_decide {
@@ -398,7 +398,7 @@ impl_decide!(
 );
 
 /// A parser returned by [`Combinator::map`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Map<P, F>(P, F);
 
 impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O) -> O> Parser<I, S> for Map<P, F> {
@@ -411,7 +411,7 @@ impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O) -> O> Parser<I, S> for Map<P, F> 
 }
 
 /// A parser returned by [`Combinator::map_with`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct MapWith<P, F>(P, F);
 
 impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O, &mut S) -> O> Parser<I, S> for MapWith<P, F> {
@@ -424,7 +424,7 @@ impl<I, S, P: Parser<I, S>, O, F: FnOnce(P::O, &mut S) -> O> Parser<I, S> for Ma
 }
 
 /// A parser returned by [`Combinator::filter`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Filter<P, F>(P, F);
 
 impl<I, S, P: Parser<I, S>, F: FnOnce(&P::O) -> bool> Parser<I, S> for Filter<P, F> {
@@ -455,7 +455,7 @@ type ThenMap<I, S, P1, P2, O> =
 type DelimitedBy<L, M, R, LO, MO, RO> = Map<All<(L, M, R)>, fn((LO, MO, RO)) -> MO>;
 
 /// A parser returned by [`Combinator::opt`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Opt<P>(P);
 
 impl<I: Clone, S, P: Parser<I, S>> Parser<I, S> for Opt<P> {
@@ -498,7 +498,7 @@ where
 }
 
 /// A parser returned by [`repeat`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Repeat<P, O>(P, O);
 
 impl<I: Clone, S, P: Parser<I, S>, O: Extend<P::O>, PF: FnMut() -> P, OF: FnOnce() -> O>
@@ -517,7 +517,7 @@ impl<I: Clone, S, P: Parser<I, S>, O: Extend<P::O>, PF: FnMut() -> P, OF: FnOnce
 }
 
 /// A parser returned by [`Combinator::repeated`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Repeated<P, O>(P, O);
 
 impl<I: Clone, S, P: Parser<I, S> + Clone, O: Extend<P::O>, OF: FnOnce() -> O> Parser<I, S>
@@ -552,7 +552,7 @@ where
 }
 
 /// A parser returned by [`separate_by`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct SeparateBy<P, Sep, O>(P, Sep, O);
 
 impl<I: Clone, S, P: Parser<I, S>, Sep: Parser<I, S>, O: Extend<P::O>, PF, SepF, OF> Parser<I, S>
@@ -587,7 +587,7 @@ where
 }
 
 /// A parser returned by [`Combinator::separated_by`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct SeparatedBy<P, Sep, O>(P, Sep, O);
 
 impl<I: Clone, S, P, Sep, O: Extend<P::O>, OF> Parser<I, S> for SeparatedBy<P, Sep, OF>
@@ -605,7 +605,7 @@ where
 }
 
 /// A parser returned by [`Combinator::and_then`].
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct AndThen<P, F>(P, F);
 
 impl<I, S, P1: Parser<I, S>, P2: Parser<I, S>, F: FnOnce(P1::O) -> P2> Parser<I, S>
