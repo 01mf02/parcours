@@ -31,7 +31,7 @@
 //! are generic over any state `S`, whereas those which access the state
 //! use `State`.
 use parcours::str::{self, matches, take_while};
-use parcours::{from_fn, lazy, Combinator, Parser};
+use parcours::{consumed, from_fn, lazy, Combinator, Parser};
 
 /// A lambda expression.
 #[allow(dead_code)]
@@ -85,9 +85,7 @@ fn space<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
 fn ident<'a, S>() -> impl Parser<&'a str, S, O = &'a str> + Clone {
     let pn = |c: &char, _: &mut S| !c.is_ascii() || c.is_ascii_alphanumeric();
     let p0 = |c: &char| !c.is_ascii() || c.is_ascii_alphabetic();
-    str::with_consumed(str::next().filter(p0).then(take_while(pn)))
-        .map(|(_, s)| s)
-        .then_ignore(space())
+    consumed(str::next().filter(p0).then(take_while(pn))).then_ignore(space())
 }
 
 /// Parse the given string, potentially followed by whitespace.

@@ -531,11 +531,6 @@ impl<I, S, P: Parser<I, S>, F: FnOnce() -> P> Parser<I, S> for Lazy<F> {
     }
 }
 
-/// If the input is not empty, return its first element and advance input.
-pub fn next<T, S>() -> Next<T, S> {
-    Next(core::marker::PhantomData)
-}
-
 /// A parser returned by [`next`].
 pub struct Next<T, S>(core::marker::PhantomData<(T, S)>);
 
@@ -547,12 +542,18 @@ impl<T, S> Clone for Next<T, S> {
     }
 }
 
-/// Run the given parser and combine its output with the input it consumed.
+/// Run the given parser and return the input it consumed.
 ///
 /// This is implemented for input types `&str` and `&[T]`.
-pub fn with_consumed<I, S, P: Parser<I, S>>(p: P) -> WithConsumed<P> {
-    WithConsumed(p)
+pub fn consumed<I, S, P: Parser<I, S>>(p: P) -> Consumed<I, S, P>
+where
+    WithConsumed<P>: Parser<I, S, O = (P::O, I)>,
+{
+    WithConsumed(p).map(|(_y, i)| i)
 }
+
+type Consumed<I, S, P> =
+    crate::combinator::Map<WithConsumed<P>, fn((<P as Parser<I, S>>::O, I)) -> I>;
 
 /// A parser returned by [`with_consumed`].
 #[derive(Copy, Clone)]
