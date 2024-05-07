@@ -207,6 +207,13 @@ pub use combinator::{all, any, repeat, separate_by, Combinator};
 ///
 /// All this means that once there was the decision for [`Parser::parse`] to return [`Option`],
 /// there was a clear incentive to take `self` in [`Parser::parse`] in order to allow for [`FnOnce`].
+///
+/// **TL;DR**: When our input `I` is a string and we do not use mutable state `S`, we have:
+///
+/// > *A Parser for a Thing  
+/// > is a function from a String  
+/// > to an optional Pair of  
+/// > a Thing and a String!*
 pub trait Parser<I, S = ()> {
     /// Output of the parser.
     type O;
@@ -526,7 +533,7 @@ impl<I, S, P: Parser<I, S>, F: FnOnce() -> P> Parser<I, S> for Lazy<F> {
 
 /// Pattern matching for successful cases.
 ///
-/// When using functions like [`slice::first_filter_map`],
+/// When using functions like [`Combinator::filter_map`],
 /// we frequently end up with patterns like this:
 ///
 /// ~~~
