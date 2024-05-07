@@ -538,7 +538,7 @@ impl<T, S> Copy for Next<T, S> {}
 
 impl<T, S> Clone for Next<T, S> {
     fn clone(&self) -> Self {
-        Next(core::marker::PhantomData)
+        *self
     }
 }
 
